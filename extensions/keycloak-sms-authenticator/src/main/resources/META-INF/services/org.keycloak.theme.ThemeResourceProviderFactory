@@ -1,1 +1,1 @@
-com.inventage.keycloak.iam.infrastructure.theme.SmsThemeResourceProviderFactory
+com.inventage.keycloak.sms.theme.SmsThemeResourceProviderFactory

@@ -1,5 +1,7 @@
-Keycloak-Custom
+Keycloak SMS Authenticator
 ===
+
+This project provides the [Keycloak SMS authenticator extension](./extensions/keycloak-sms-authenticator/README.md).
 
 Project Template
 ---

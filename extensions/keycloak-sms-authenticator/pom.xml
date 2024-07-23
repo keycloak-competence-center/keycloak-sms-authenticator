@@ -20,21 +20,21 @@
         </dependency>
         <dependency>
             <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-services</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.keycloak</groupId>
             <artifactId>keycloak-server-spi</artifactId>
         </dependency>
         <dependency>
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-server-spi-private</artifactId>
         </dependency>
-        <!--dependency>
-            <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-services</artifactId>
-        </dependency>
+        <!-- for classes of package jakarta.ws.rs.core.* -->
         <dependency>
-            <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-model-infinispan</artifactId>
-        </dependency-->
-
+            <groupId>jakarta.ws.rs</groupId>
+            <artifactId>jakarta.ws.rs-api</artifactId>
+        </dependency>
         <!-- for testing -->
         <dependency>
             <groupId>junit</groupId>

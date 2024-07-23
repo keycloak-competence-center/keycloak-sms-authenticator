@@ -1,2 +1,1 @@
-com.inventage.keycloak.iam.infrastructure.authentication.authenticators.sms.forms.ValidateEmailFormAction
-com.inventage.keycloak.iam.infrastructure.authentication.authenticators.sms.forms.PhoneNumberOnRegisterFormAction
+com.inventage.keycloak.sms.authentication.forms.PhoneNumberOnRegisterFormAction

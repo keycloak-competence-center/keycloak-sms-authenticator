@@ -1,1 +1,1 @@
-com.inventage.keycloak.iam.infrastructure.authentication.authenticators.sms.authenticator.SmsAuthenticatorFactory
+com.inventage.keycloak.sms.authentication.authenticators.SmsAuthenticatorFactory

@@ -20,8 +20,8 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.inventage.keycloak.custom</groupId>
-            <artifactId>extension-no-op-authenticator</artifactId>
+            <groupId>com.inventage.keycloak</groupId>
+            <artifactId>keycloak-sms-authenticator</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -101,7 +101,7 @@
                             <goal>copy-dependencies</goal>
                         </goals>
                         <configuration>
-                            <includeArtifactIds>extension-no-op-authenticator,themes</includeArtifactIds>
+                            <includeArtifactIds>keycloak-sms-authenticator,themes</includeArtifactIds>
                             <outputDirectory>${project.build.outputDirectory}/keycloak/providers</outputDirectory>
                         </configuration>
                     </execution>

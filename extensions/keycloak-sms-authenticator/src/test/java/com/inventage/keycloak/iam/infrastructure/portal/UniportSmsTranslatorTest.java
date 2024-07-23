@@ -1,6 +1,8 @@
 package com.inventage.keycloak.iam.infrastructure.portal;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.inventage.keycloak.sms.infrastructure.gateway.uniport.acl.SmsSendRequest;
+import com.inventage.keycloak.sms.infrastructure.gateway.uniport.acl.UniportSmsTranslator;
 import org.junit.Assert;
 import org.junit.Test;
 

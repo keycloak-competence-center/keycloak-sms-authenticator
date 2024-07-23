@@ -69,6 +69,6 @@ class KeycloakCustomTestIT {
                 .build();
 
         Optional<RealmRepresentation> example1 = keycloakAdminClient.realms().findAll().stream().filter(realmRepresentation -> realmRepresentation.getRealm().equals("example1")).findFirst();
-        Assertions.assertTrue(example1.isPresent(), "Realm `example1` should exist. Realm import via keycloak-config-cli failed.");
+        Assertions.assertTrue(example1.isPresent(), "Realm `myrealm` should exist. Realm import via keycloak-config-cli failed.");
     }
 }
