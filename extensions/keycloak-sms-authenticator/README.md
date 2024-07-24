@@ -12,6 +12,8 @@ cp target/keycloak-sms-authenticator-1.0.0-SNAPSHOT.jar _KEYCLOAK_HOME_/provider
 Configuration
 ---
 
+The following snippets belong all to the same JSON file
+
 ```json
 {
   "authenticationFlows": [
