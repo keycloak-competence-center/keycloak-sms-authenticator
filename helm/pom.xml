@@ -14,6 +14,7 @@
     <packaging>helm</packaging>
 
     <properties>
+        <maven.deploy.skip>true</maven.deploy.skip>
         <chart.directory>${project.basedir}/src/generated/keycloak-custom-chart</chart.directory>
 
         <!-- Image names in chart should always use the inventage registry! -->

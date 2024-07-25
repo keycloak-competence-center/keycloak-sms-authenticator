@@ -12,6 +12,10 @@
 
     <artifactId>container</artifactId>
 
+    <properties>
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
     <dependencies>
         <!-- dependencies to be included in the container image -->
         <dependency>
