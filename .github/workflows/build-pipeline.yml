@@ -40,10 +40,3 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    # https://github.com/actions/delete-package-versions
-    - uses: actions/delete-package-versions@v4
-      with:
-        package-name: 'com.inventage.keycloak.sms-authenticator'
-        package-type: 'maven'
-        min-versions-to-keep: 5
-        delete-only-pre-release-versions: "true"
