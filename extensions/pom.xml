@@ -28,6 +28,7 @@
             <artifactId>server</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
