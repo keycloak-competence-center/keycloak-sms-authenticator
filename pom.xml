@@ -191,6 +191,11 @@
                     <configuration>
                         <images>
                             <image>
+                                <external>
+                                    <type>properties</type>
+                                    <prefix>docker</prefix>
+                                    <mode>override</mode>
+                                </external>
                                 <name>${docker.registry}${docker.image.name}</name>
                                 <build>
                                     <tags>
