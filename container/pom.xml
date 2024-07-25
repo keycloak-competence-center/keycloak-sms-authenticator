@@ -92,7 +92,7 @@
                             <goal>unpack-dependencies</goal>
                         </goals>
                         <configuration>
-                            <includeGroupIds>com.inventage.keycloak.custom</includeGroupIds>
+                            <includeGroupIds>com.inventage.keycloak.sms-authenticator</includeGroupIds>
                             <includeArtifactIds>config</includeArtifactIds>
                             <outputDirectory>${project.build.outputDirectory}</outputDirectory>
                         </configuration>
