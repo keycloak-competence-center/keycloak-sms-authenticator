@@ -16,7 +16,7 @@ import java.util.Optional;
 @Testcontainers
 class KeycloakCustomTestIT {
 
-    private static final String DOCKER_IMAGE_NAME = "docker-registry.inventage.com:10094/com.inventage.keycloak.custom.container:latest";
+    private static final String DOCKER_IMAGE_NAME = "docker-registry.inventage.com:10094/com.inventage.keycloak.sms-authenticator.container:latest";
     private static final String POSTGRES_DOCKER_IMAGE_NAME = "postgres:13-alpine";
     private static final String POSTGRES_NETWORK_ALIAS = "postgres";
     private static KeycloakCustomContainer keycloak;
