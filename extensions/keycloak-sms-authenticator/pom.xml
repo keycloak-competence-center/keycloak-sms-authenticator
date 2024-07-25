@@ -6,11 +6,11 @@
 
     <parent>
         <artifactId>extensions</artifactId>
-        <groupId>com.inventage.keycloak.custom</groupId>
+        <groupId>com.inventage.keycloak.sms-authenticator</groupId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <groupId>com.inventage.keycloak</groupId>
+    <groupId>com.inventage.keycloak.sms-authenticator</groupId>
     <artifactId>keycloak-sms-authenticator</artifactId>
 
     <dependencies>

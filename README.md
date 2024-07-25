@@ -1,7 +1,7 @@
 Keycloak SMS Authenticator
 ===
 
-This project provides the [Keycloak SMS authenticator](./extensions/keycloak-sms-authenticator/README.md) extension.
+This project provides the [Keycloak SMS authenticator](./extensions/keycloak-sms-authenticator/README.md) extension as its only deliverable.
 
 The following submodules have the artifact deployment to the maven repository skipped in their pom.xml:
 

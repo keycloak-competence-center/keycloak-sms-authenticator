@@ -1,12 +1,12 @@
 Keycloak SMS Authenticator
 ===
 
-This Keycloak extension allows to use a code sent by SMS as a second factor.
+The keycloak-sms-authenticator extension allows to use a code sent by SMS as a second factor.
 
 To install the SMS Authenticator add the jar to the Keycloak server:
 
 ```shell
-cp target/keycloak-sms-authenticator-1.0.0-SNAPSHOT.jar _KEYCLOAK_HOME_/providers/
+cp target/keycloak-sms-authenticator-<VERSION>.jar <KEYCLOAK_HOME>/providers/
 ```
 
 Configuration

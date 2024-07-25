@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.inventage.keycloak.custom</groupId>
+    <groupId>com.inventage.keycloak.sms-authenticator</groupId>
     <artifactId>parent</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
@@ -27,7 +27,7 @@
         <keycloak.providers.dir>../../server/${keycloak.dir}/providers</keycloak.providers.dir> <!-- used in extension modules -->
         <keycloak.themes.dir>../server/${keycloak.dir}/themes</keycloak.themes.dir> <!-- used in themes module -->
         <docker.registry>docker-registry.inventage.com:10094/</docker.registry>
-        <docker.image.name>com.inventage.keycloak.custom.container</docker.image.name>
+        <docker.image.name>com.inventage.keycloak.sms-authenticator.container</docker.image.name>
         <docker.contextDir>${project.build.outputDirectory}</docker.contextDir>
         <docker.verbose>true</docker.verbose>
         <docker.imagePropertyConfiguration>override</docker.imagePropertyConfiguration>
