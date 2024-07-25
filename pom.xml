@@ -265,7 +265,7 @@
                                 <goal>init</goal>
                                 <goal>lint</goal>
                                 <goal>package</goal>
-                                <goal>push</goal>
+                                <!--<goal>push</goal>-->
                             </goals>
                             <phase>deploy</phase>
                         </execution>
