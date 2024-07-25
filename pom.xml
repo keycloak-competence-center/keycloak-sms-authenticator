@@ -224,14 +224,6 @@
                                 <goal>tag</goal>
                             </goals>
                         </execution>
-                        <!-- push image -->
-                        <execution>
-                            <id>push-image</id>
-                            <phase>deploy</phase>
-                            <goals>
-                                <goal>push</goal>
-                            </goals>
-                        </execution>
                     </executions>
                 </plugin>
                 <plugin>
