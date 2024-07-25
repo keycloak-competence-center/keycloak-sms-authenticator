@@ -24,7 +24,7 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.inventage.keycloak</groupId>
+            <groupId>com.inventage.keycloak.sms-authenticator</groupId>
             <artifactId>keycloak-sms-authenticator</artifactId>
             <version>${project.version}</version>
         </dependency>
