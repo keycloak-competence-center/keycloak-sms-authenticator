@@ -1,2 +1,3 @@
 com.inventage.keycloak.sms.infrastructure.gateway.console.SmsToConsoleProviderFactory
 com.inventage.keycloak.sms.infrastructure.gateway.uniport.UniportProviderFactory
+com.inventage.keycloak.sms.infrastructure.gateway.smsfactor.SmsFactorProviderFactory

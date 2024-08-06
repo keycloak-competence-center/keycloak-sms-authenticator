@@ -137,9 +137,10 @@
     {
       "alias": "sms-authenticator",
       "config": {
-        "sms-service-provider-id": "sms-to-console",
+        "sms-service-provider-id": "sms-factor",
         "sms-code-ttl": "60",
-        "sms-code-length": "4"
+        "sms-code-length": "4",
+        "sms-factor-token": "token"
       }
     }
   ],
@@ -152,12 +153,33 @@
       "defaultAction": true,
       "priority": 1001,
       "config": {
-        "sms-service-provider-id": "sms-to-console",
+        "sms-service-provider-id": "sms-factor",
         "sms-code-ttl": "60",
-        "sms-code-length": "5"
+        "sms-code-length": "5",
+        "sms-factor-token": "token"
       }
     }
   ],
+  "components": {
+    "com.inventage.keycloak.sms.gateway.SmsServiceProvider": [
+      {
+        "name": "SmsFactorProvider",
+        "providerId": "sms-factor",
+        "subComponents": {},
+        "config": {
+          "service-url": [
+            "https://api.smsfactor.com/send/simulate"
+          ],
+          "sender-address": [
+            "Keycloak"
+          ],
+          "sms-factor-token": [
+            "$(env:SMS_FACTOR_TOKEN:-token)"
+          ]
+        }
+      }
+    ]
+  },
   "enabledEventTypes": [
     "AUTHREQID_TO_TOKEN",
     "AUTHREQID_TO_TOKEN_ERROR",
