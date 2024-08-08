@@ -14,7 +14,6 @@ Gateways
 
 Following SMS Gateways implementations are supported:
 
-
 | Name                        |                Provider Id                 | Description                                                   |
 |-----------------------------|:------------------------------------------:|---------------------------------------------------------------|
 | SMS to console |              `sms-to-console`              | Writes SMS Code to console                                    |
