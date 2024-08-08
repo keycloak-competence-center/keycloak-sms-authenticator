@@ -61,10 +61,11 @@ The following snippets belong all to the same JSON file
             "config": {
                 "sms-service-provider-id": "uniport-sms-service",
                 "sms-code-ttl": "60",
-                "sms-code-length": "4"
-            }
-        }
-    ]
+                "sms-code-length": "4", 
+                "sms-show-phone-number": false
+      }
+    }
+  ]
 }
 ```
 
@@ -81,7 +82,8 @@ The following snippets belong all to the same JSON file
       "config": {
         "sms-service-provider-id": "sms-to-console",
         "sms-code-ttl": "60",
-        "sms-code-length": "5"
+        "sms-code-length": "5", 
+        "sms-show-phone-number": false
       }
     }
   ]
