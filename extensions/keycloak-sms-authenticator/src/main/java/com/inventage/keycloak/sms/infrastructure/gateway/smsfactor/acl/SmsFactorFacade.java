@@ -50,7 +50,7 @@ public class SmsFactorFacade {
      *
      * @apiNote <a href="https://dev.smsfactor.com/en/api/sms/send/send-single">send single message documentation</a>
      */
-    /* package private */ HttpResponse get(SmsFactorSendRequest sendRequest) {
+    /* package private */ HttpResponse sendSingleMessage(SmsFactorSendRequest sendRequest) {
         try {
             final HttpGet httpGet = createHttpGetRequest(sendRequest);
             return httpClient.execute(httpGet);
