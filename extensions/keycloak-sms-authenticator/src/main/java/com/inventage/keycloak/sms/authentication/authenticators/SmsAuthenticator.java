@@ -55,7 +55,9 @@ public class SmsAuthenticator implements Authenticator {
         final SmsCodeConfiguration smsCodeConfiguration = new SmsCodeConfiguration(config);
         final SmsServiceProvider smsServiceProvider = session.getProvider(SmsServiceProvider.class, smsCodeConfiguration.getSmsServiceProviderId());
         if (smsServiceProvider == null) {
-            LOGGER.warnf("sendSmsChallenge: SMS couldn't be sent, because SmsServiceProvider '%s' not found!", smsCodeConfiguration.getSmsServiceProviderId());
+            final IllegalStateException exception = new IllegalStateException("Sms Service Provider is null");
+            LOGGER.warnf(exception, "sendSmsChallenge: SMS couldn't be sent, because SmsServiceProvider '%s' not found!", smsCodeConfiguration.getSmsServiceProviderId());
+            throw exception;
         }
 
         String code = new SmsChallenge(authenticationSession).code(smsCodeConfiguration);

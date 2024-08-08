@@ -65,6 +65,6 @@ public class UniportProviderFactory implements SmsServiceProviderFactory, Compon
         senderAddress.setLabel("Sender Address");
         senderAddress.setHelpText("Address used as the sender of the SMS.");
 
-        return List.of(senderAddress);
+        return List.of(serviceUrl, senderAddress);
     }
 }
