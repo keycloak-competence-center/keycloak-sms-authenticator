@@ -139,8 +139,7 @@
       "config": {
         "sms-service-provider-id": "sms-to-console",
         "sms-code-ttl": "60",
-        "sms-code-length": "4",
-        "sms-factor-token": "token"
+        "sms-code-length": "4"
       }
     }
   ],
@@ -155,8 +154,7 @@
       "config": {
         "sms-service-provider-id": "sms-to-console",
         "sms-code-ttl": "60",
-        "sms-code-length": "5",
-        "sms-factor-token": "token"
+        "sms-code-length": "5"
       }
     }
   ],
