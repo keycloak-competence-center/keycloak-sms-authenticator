@@ -16,7 +16,6 @@ import org.keycloak.models.*;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
 import java.io.IOException;
-import java.util.Map;
 
 import static com.inventage.keycloak.sms.Constants.INPUT_ID_CODE;
 import static com.inventage.keycloak.sms.Constants.SMS_CHALLENGE_TEMPLATE_NAME;
@@ -47,12 +46,17 @@ public class SmsAuthenticator implements Authenticator {
     }
 
     private Response sendSmsChallengeAndAskUserForCode(AuthenticationFlowContext context) throws IOException {
-        sendSmsChallenge(context.getUser(), context.getAuthenticatorConfig().getConfig(), context.getAuthenticationSession(), context.getSession());
-        return context.form().setAttribute("realm", context.getRealm()).createForm(SMS_CHALLENGE_TEMPLATE_NAME);
+        final String mobileNumber = getMobileNumber(context.getUser());
+        final SmsCodeConfiguration smsCodeConfiguration = new SmsCodeConfiguration(context.getAuthenticatorConfig().getConfig());
+        sendSmsChallenge(context.getUser(), mobileNumber, smsCodeConfiguration, context.getAuthenticationSession(), context.getSession());
+        return context.form()
+                .setAttribute("realm", context.getRealm())
+                .setAttribute("showPhoneNumber", smsCodeConfiguration.getShowPhoneNumber(context.getAuthenticatorConfig()))
+                .setAttribute("mobileNumber", mobileNumber)
+                .createForm(SMS_CHALLENGE_TEMPLATE_NAME);
     }
 
-    private void sendSmsChallenge(UserModel user, Map<String, String> config, AuthenticationSessionModel authenticationSession, KeycloakSession session) throws IOException {
-        final SmsCodeConfiguration smsCodeConfiguration = new SmsCodeConfiguration(config);
+    private void sendSmsChallenge(UserModel user, String mobileNumber, SmsCodeConfiguration smsCodeConfiguration, AuthenticationSessionModel authenticationSession, KeycloakSession session) throws IOException {
         final SmsServiceProvider smsServiceProvider = session.getProvider(SmsServiceProvider.class, smsCodeConfiguration.getSmsServiceProviderId());
         if (smsServiceProvider == null) {
             final IllegalStateException exception = new IllegalStateException("Sms Service Provider is null");
@@ -62,7 +66,7 @@ public class SmsAuthenticator implements Authenticator {
 
         String code = new SmsChallenge(authenticationSession).code(smsCodeConfiguration);
         String smsText = smsTextService.getSmsText(code, smsCodeConfiguration.getSmsCodeTtl(), session.getContext().resolveLocale(user));
-        smsServiceProvider.getSmsService().send(getMobileNumber(user), smsText);
+        smsServiceProvider.getSmsService().send(mobileNumber, smsText);
     }
 
     @Override
@@ -126,5 +130,4 @@ public class SmsAuthenticator implements Authenticator {
     @Override
     public void close() {
     }
-
 }
