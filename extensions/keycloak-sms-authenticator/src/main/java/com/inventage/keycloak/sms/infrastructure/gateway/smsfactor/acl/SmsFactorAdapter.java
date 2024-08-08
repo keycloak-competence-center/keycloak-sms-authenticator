@@ -27,12 +27,9 @@ public class SmsFactorAdapter implements SmsService {
     public void send(String phoneNumber, String message) {
         final SmsFactorSendRequest sendRequest = translator.smsRequest(phoneNumber, message, sender);
 
-        LOGGER.debugf("send: phone Number: %s", phoneNumber);
-        // TODO: do not log message
-        LOGGER.debugf("send: message %s", message);
-        LOGGER.debugf("send: sender %s", sender);
+        LOGGER.debugf("send: phone Number: '%s', sender: '%s'", phoneNumber, sender);
 
-        final HttpResponse response = facade.get(sendRequest);
+        final HttpResponse response = facade.sendSingleMessage(sendRequest);
 
         LOGGER.infof("send: Sent SMS and got response %d", response.getStatusLine().getStatusCode());
     }
