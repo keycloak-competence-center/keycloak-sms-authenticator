@@ -3,6 +3,7 @@ package com.inventage.keycloak.sms.authentication;
 import com.inventage.keycloak.sms.infrastructure.gateway.console.SmsToConsoleProviderFactory;
 import com.inventage.keycloak.sms.models.credential.SmSChallengeConfiguration;
 import org.jboss.logging.Logger;
+import org.keycloak.models.AuthenticatorConfigModel;
 import org.keycloak.provider.ProviderConfigProperty;
 
 import java.util.List;
@@ -22,6 +23,9 @@ public class SmsCodeConfiguration implements SmSChallengeConfiguration {
 
     public static final String SMS_CODE_CHARACTERS_CONFIG = "sms-code-characters";
     public static final String SMS_CODE_CHARACTERS_DEFAULT = null;
+
+    private static final String SHOW_PHONE_NUMBER_CONFIG = "sms-show-phone-number";
+    private static final boolean SHOW_PHONE_NUMBER_DEFAULT = false;
 
     public static List<ProviderConfigProperty> getConfigProperties() {
         final ProviderConfigProperty smsServiceProviderId = new ProviderConfigProperty();
@@ -51,6 +55,12 @@ public class SmsCodeConfiguration implements SmSChallengeConfiguration {
         smsCodeCharacters.setName(SMS_CODE_CHARACTERS_CONFIG);
         smsCodeCharacters.setLabel("Characters to be used for the SMS code");
         smsCodeCharacters.setHelpText("If not specified, the value is taken from Keycloak SecretGenerator");
+
+        final ProviderConfigProperty showPhoneNumber = new ProviderConfigProperty();
+        showPhoneNumber.setType(ProviderConfigProperty.STRING_TYPE);
+        showPhoneNumber.setName(SHOW_PHONE_NUMBER_CONFIG);
+        showPhoneNumber.setLabel("Show Phone Number Switch");
+        showPhoneNumber.setHelpText("Switch to control if the phone number on the SMS login screen should be shown.");
 
         return List.of(smsServiceProviderId, smsCodeLength, smsCodeTtl, smsCodeCharacters);
     }
@@ -108,4 +118,15 @@ public class SmsCodeConfiguration implements SmSChallengeConfiguration {
         return defaultValue;
     }
 
+    public boolean getShowPhoneNumber(AuthenticatorConfigModel config) {
+        if (config != null && config.getConfig() != null) {
+            final String configValue = config.getConfig().get(SHOW_PHONE_NUMBER_CONFIG);
+            final boolean configRead = Boolean.parseBoolean(configValue);
+            LOGGER.debugf("showPhoneNumber: using config value '%b'", configRead);
+            return configRead;
+        }
+
+        LOGGER.debugf("showPhoneNumber: using default value '%b'", SHOW_PHONE_NUMBER_DEFAULT);
+        return SHOW_PHONE_NUMBER_DEFAULT;
+    }
 }

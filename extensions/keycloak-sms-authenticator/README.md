@@ -61,30 +61,32 @@ The following snippets belong all to the same JSON file
             "config": {
                 "sms-service-provider-id": "uniport-sms-service",
                 "sms-code-ttl": "60",
-                "sms-code-length": "4"
-            }
-        }
-    ]
+                "sms-code-length": "4", 
+                "sms-show-phone-number": false
+      }
+    }
+  ]
 }
 ```
 
 ```json
 {
-  "requiredActions": [
-    {
-      "alias": "sms-config",
-      "name": "Configure SMS",
-      "providerId": "sms-config",
-      "enabled": true,
-      "defaultAction": false,
-      "priority": 1001,
-      "config": {
-        "sms-service-provider-id": "sms-to-console",
-        "sms-code-ttl": "60",
-        "sms-code-length": "5"
-      }
-    }
-  ]
+    "requiredActions": [
+        {
+            "alias": "sms-config",
+            "name": "Configure SMS",
+            "providerId": "sms-config",
+            "enabled": true,
+            "defaultAction": false,
+            "priority": 1001,
+            "config": {
+                "sms-service-provider-id": "sms-to-console",
+                "sms-code-ttl": "60",
+                "sms-code-length": "5",
+                "sms-show-phone-number": false
+            }
+        }
+    ]
 }
 ```
 

@@ -28,6 +28,10 @@
             </div>
         </form>
     <#elseif section = "info" >
-        ${msg("smsAuthInstruction")}
+        <#if showPhoneNumber >
+            ${msg("smsAuthInstructionWithNumber", mobileNumber)}
+        <#else>
+            ${msg("smsAuthInstruction")}
+        </#if>
     </#if>
 </@layout.registrationLayout>
