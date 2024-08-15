@@ -89,15 +89,20 @@ public class SmsAuthenticator implements Authenticator {
         } else {
             // invalid
             AuthenticationExecutionModel execution = context.getExecution();
+            final String mobileNumber = getMobileNumber(context.getUser());
+            final SmsCodeConfiguration smsCodeConfiguration = new SmsCodeConfiguration(context.getAuthenticatorConfig().getConfig());
             if (execution.isRequired()) {
                 context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS,
-                        context.form().setAttribute("realm", context.getRealm())
-                                .setError("smsAuthCodeInvalid").createForm(SMS_CHALLENGE_TEMPLATE_NAME));
+                        context.form()
+                                .setAttribute("realm", context.getRealm())
+                                .setAttribute("showPhoneNumber", smsCodeConfiguration.getShowPhoneNumber(context.getAuthenticatorConfig()))
+                                .setAttribute("mobileNumber", mobileNumber)
+                                .setError("smsAuthCodeInvalid")
+                                .createForm(SMS_CHALLENGE_TEMPLATE_NAME));
             } else if (execution.isConditional() || execution.isAlternative()) {
                 context.attempted();
             }
         }
-
     }
 
     private String getMobileNumber(UserModel user) {
@@ -109,7 +114,6 @@ public class SmsAuthenticator implements Authenticator {
         SmsCredentialModel smsCredentialModel = SmsCredentialModel.createFromCredentialModel(credentialModel);
         return smsCredentialModel.getSmsCredentialData().getPhoneNumber();
     }
-
 
     @Override
     public boolean requiresUser() {
