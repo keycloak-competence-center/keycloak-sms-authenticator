@@ -15,9 +15,11 @@ import org.keycloak.authentication.CredentialRegistrator;
 import org.keycloak.authentication.InitiatedActionSupport;
 import org.keycloak.authentication.RequiredActionContext;
 import org.keycloak.authentication.RequiredActionProvider;
+import org.keycloak.credential.CredentialModel;
 import org.keycloak.credential.CredentialProvider;
 import org.keycloak.forms.login.LoginFormsProvider;
 import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.UserModel;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
 import java.io.IOException;
@@ -188,6 +190,10 @@ public class SmsRequiredAction implements RequiredActionProvider, CredentialRegi
         }
 
         addResetPhoneNumberActionUrl(form);
+        final String mobileNumber = context.getAuthenticationSession().getAuthNote(ENTERED_NUMBER_KEY);
+        final SmsCodeConfiguration smsCodeConfiguration = new SmsCodeConfiguration(context.getConfig().getConfig());
+        form.setAttribute("showPhoneNumber", smsCodeConfiguration.getShowPhoneNumber(context.getRealm().getAuthenticatorConfigByAlias(PROVIDER_ID)));
+        form.setAttribute("mobileNumber", mobileNumber);
         Response challenge = form.createForm(SMS_CHALLENGE_TEMPLATE_NAME);
         context.challenge(challenge);
     }
