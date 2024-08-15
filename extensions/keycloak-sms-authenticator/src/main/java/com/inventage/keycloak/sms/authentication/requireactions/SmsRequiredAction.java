@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.inventage.keycloak.sms.Constants.*;
+import static com.inventage.keycloak.sms.authentication.authenticators.SmsAuthenticator.SMS_AUTH_CODE_INVALID;
 
 
 public class SmsRequiredAction implements RequiredActionProvider, CredentialRegistrator {
@@ -133,6 +134,7 @@ public class SmsRequiredAction implements RequiredActionProvider, CredentialRegi
         Optional<String> error = validateCode(code);
         if (error.isPresent()) {
             showChallengeScreen(error);
+            context.form().setAttribute()
             //TODO send code again???
         }
         else {
@@ -187,6 +189,8 @@ public class SmsRequiredAction implements RequiredActionProvider, CredentialRegi
         LoginFormsProvider form = context.form();
         if (error.isPresent()) {
             form.setError(error.get());
+            // TODO: means error always invalid code?
+            form.setAttribute(SMS_AUTH_CODE_INVALID, true);
         }
 
         addResetPhoneNumberActionUrl(form);

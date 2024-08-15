@@ -26,6 +26,7 @@ import static com.inventage.keycloak.sms.Constants.SMS_CHALLENGE_TEMPLATE_NAME;
 public class SmsAuthenticator implements Authenticator {
 
     private static final Logger LOGGER = Logger.getLogger(SmsAuthenticator.class);
+    public static final String SMS_AUTH_CODE_INVALID = "smsAuthCodeInvalid";
 
     private final SmsTextService smsTextService;
 
@@ -97,7 +98,8 @@ public class SmsAuthenticator implements Authenticator {
                                 .setAttribute("realm", context.getRealm())
                                 .setAttribute("showPhoneNumber", smsCodeConfiguration.getShowPhoneNumber(context.getAuthenticatorConfig()))
                                 .setAttribute("mobileNumber", mobileNumber)
-                                .setError("smsAuthCodeInvalid")
+                                .setError(SMS_AUTH_CODE_INVALID)
+                                .setAttribute(SMS_AUTH_CODE_INVALID, true)
                                 .createForm(SMS_CHALLENGE_TEMPLATE_NAME));
             } else if (execution.isConditional() || execution.isAlternative()) {
                 context.attempted();
