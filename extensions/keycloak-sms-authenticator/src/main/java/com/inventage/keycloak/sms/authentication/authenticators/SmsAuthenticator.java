@@ -25,9 +25,9 @@ import static com.inventage.keycloak.sms.Constants.SMS_CHALLENGE_TEMPLATE_NAME;
  */
 public class SmsAuthenticator implements Authenticator {
 
-    private static final Logger LOGGER = Logger.getLogger(SmsAuthenticator.class);
     public static final String SMS_AUTH_CODE_INVALID = "smsAuthCodeInvalid";
 
+    private static final Logger LOGGER = Logger.getLogger(SmsAuthenticator.class);
     private final SmsTextService smsTextService;
 
     public SmsAuthenticator(SmsTextService smsTextService) {

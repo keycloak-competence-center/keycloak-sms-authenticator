@@ -134,7 +134,6 @@ public class SmsRequiredAction implements RequiredActionProvider, CredentialRegi
         Optional<String> error = validateCode(code);
         if (error.isPresent()) {
             showChallengeScreen(error);
-            context.form().setAttribute()
             //TODO send code again???
         }
         else {
