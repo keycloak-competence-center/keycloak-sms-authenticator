@@ -28,15 +28,38 @@ jobs:
         cache: maven
 
     - name: Replace "SNAPSHOT" within POM version with date, build number and commit hash
+      id: release_candidate
       run: |
+        asset=$(mvn help:evaluate -Dexpression=project.artifactId -q -DforceStdout)
+        echo "asset=${asset}" >> $GITHUB_OUTPUT
         snapshot_version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
         major_minor_patch=$(echo "${snapshot_version}" | sed 's/SNAPSHOT//g')
         date=$(date -u +%Y%m%d%H%M)
         release_candidate_version=${major_minor_patch}${date}-${{github.run_number}}-${GITHUB_SHA::8}
         mvn versions:set -DnewVersion=${release_candidate_version}
-
+        echo "version=${release_candidate_version}" >> $GITHUB_OUTPUT
     - name: Build with Maven
       run: mvn -B deploy -Dbuild.number=${{github.run_number}} -Dbuild.revision=${GITHUB_SHA} --file pom.xml
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # https://github.com/marketplace/actions/delete-releases
+    - uses: sgpublic/delete-release-action@v1.1
+      with:
+        repo: keycloak-competence-center/keycloak-sms-authenticator
+        draft-drop: true
+        draft-drop-count: 10
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+      # https://github.com/actions/create-release
+    - uses: actions/create-release@v1
+      id: create_release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+      with:
+        tag_name: ${{ steps.release_candidate.outputs.version }}
+        release_name: Release Candidate ${{ steps.release_candidate.outputs.version }}
+        body: |
+          Changes in this Release ${{ steps.release_candidate.outputs.version }}
+        draft: true
+        prerelease: true
 
