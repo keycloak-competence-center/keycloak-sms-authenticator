@@ -16,6 +16,7 @@ import org.keycloak.models.*;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import static com.inventage.keycloak.sms.Constants.INPUT_ID_CODE;
 import static com.inventage.keycloak.sms.Constants.SMS_CHALLENGE_TEMPLATE_NAME;
@@ -27,7 +28,14 @@ public class SmsAuthenticator implements Authenticator {
 
     public static final String SMS_AUTH_CODE_INVALID = "smsAuthCodeInvalid";
 
+    private static final String MOBILE_NUMBER_ATTRIBUTE = "mobileNumber";
     private static final Logger LOGGER = Logger.getLogger(SmsAuthenticator.class);
+    private static final String SMS_SENT_NOTE = "smsSent";
+    private static final String SMS_NOTE_VALUE = "true";
+    private static final String REALM_ATTRIBUTE = "realm";
+    private static final String SHOW_PHONE_NUMBER_ATTRIBUTE = "showPhoneNumber";
+    private static final String SMS_RESENT_INFO_ATTRIBUTE = "smsResent";
+
     private final SmsTextService smsTextService;
 
     public SmsAuthenticator(SmsTextService smsTextService) {
@@ -50,10 +58,22 @@ public class SmsAuthenticator implements Authenticator {
         final String mobileNumber = getMobileNumber(context.getUser());
         final SmsCodeConfiguration smsCodeConfiguration = new SmsCodeConfiguration(context.getAuthenticatorConfig().getConfig());
         sendSmsChallenge(context.getUser(), mobileNumber, smsCodeConfiguration, context.getAuthenticationSession(), context.getSession());
+
+        final String smsResent = context.getAuthenticationSession().getAuthNote(SMS_SENT_NOTE);
+        if (Objects.equals(smsResent, SMS_NOTE_VALUE)) {
+            return context.form()
+                    .setAttribute(REALM_ATTRIBUTE, context.getRealm())
+                    .setAttribute(SHOW_PHONE_NUMBER_ATTRIBUTE, smsCodeConfiguration.getShowPhoneNumber(context.getAuthenticatorConfig()))
+                    .setAttribute(MOBILE_NUMBER_ATTRIBUTE, mobileNumber)
+                    .setAttribute(SMS_RESENT_INFO_ATTRIBUTE, true)
+                    .createForm(SMS_CHALLENGE_TEMPLATE_NAME);
+        }
+
+        context.getAuthenticationSession().setAuthNote(SMS_SENT_NOTE, SMS_NOTE_VALUE);
         return context.form()
-                .setAttribute("realm", context.getRealm())
-                .setAttribute("showPhoneNumber", smsCodeConfiguration.getShowPhoneNumber(context.getAuthenticatorConfig()))
-                .setAttribute("mobileNumber", mobileNumber)
+                .setAttribute(REALM_ATTRIBUTE, context.getRealm())
+                .setAttribute(SHOW_PHONE_NUMBER_ATTRIBUTE, smsCodeConfiguration.getShowPhoneNumber(context.getAuthenticatorConfig()))
+                .setAttribute(MOBILE_NUMBER_ATTRIBUTE, mobileNumber)
                 .createForm(SMS_CHALLENGE_TEMPLATE_NAME);
     }
 
@@ -95,9 +115,9 @@ public class SmsAuthenticator implements Authenticator {
             if (execution.isRequired()) {
                 context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS,
                         context.form()
-                                .setAttribute("realm", context.getRealm())
-                                .setAttribute("showPhoneNumber", smsCodeConfiguration.getShowPhoneNumber(context.getAuthenticatorConfig()))
-                                .setAttribute("mobileNumber", mobileNumber)
+                                .setAttribute(REALM_ATTRIBUTE, context.getRealm())
+                                .setAttribute(SHOW_PHONE_NUMBER_ATTRIBUTE, smsCodeConfiguration.getShowPhoneNumber(context.getAuthenticatorConfig()))
+                                .setAttribute(MOBILE_NUMBER_ATTRIBUTE, mobileNumber)
                                 .setError(SMS_AUTH_CODE_INVALID)
                                 .setAttribute(SMS_AUTH_CODE_INVALID, true)
                                 .createForm(SMS_CHALLENGE_TEMPLATE_NAME));
