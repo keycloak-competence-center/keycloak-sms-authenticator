@@ -21,7 +21,7 @@ import java.util.Optional;
 public class SmsCredentialProvider implements CredentialProvider<SmsCredentialModel> {
 
 
-    private static final Logger logger = Logger.getLogger(SmsCredentialProvider.class);
+    private static final Logger LOGGER = Logger.getLogger(SmsCredentialProvider.class);
 
     private final KeycloakSession session;
 
@@ -42,12 +42,15 @@ public class SmsCredentialProvider implements CredentialProvider<SmsCredentialMo
         return true;
     }
 
-    private CredentialModel addCredential(RealmModel realm, UserModel user, SmsCredentialModel credentialModel) {
-        if (samePhoneNumberAlreadyConfigured(user, credentialModel)) {
-            return updateCredential(realm, user, credentialModel);
+    private CredentialModel addCredential(RealmModel realm, UserModel user, SmsCredentialModel newCredential) {
+        if (samePhoneNumberAlreadyConfigured(user, newCredential)) {
+            LOGGER.debugf("addCredential: User already has a credential with same phone number. So old credential will be updated.");
+            final CredentialModel oldCredential = getSmsCredentialModel(realm, user);
+            return updateAvailableCredential(user, oldCredential, newCredential);
         }
 
-        return user.credentialManager().createStoredCredential(credentialModel);
+        LOGGER.debugf("addCredential: User already has not a credential with same phone number. So new credential will be added.");
+        return user.credentialManager().createStoredCredential(newCredential);
     }
 
     private boolean samePhoneNumberAlreadyConfigured(UserModel user, SmsCredentialModel credentialModel) {
@@ -74,15 +77,21 @@ public class SmsCredentialProvider implements CredentialProvider<SmsCredentialMo
     }
 
     // replace the sms credential if there is already one
-    private CredentialModel updateCredential(RealmModel realm, UserModel user, SmsCredentialModel credentialModel) {
-        CredentialModel smsCredentialModel = getSmsCredentialModel(realm, user);
-        if (smsCredentialModel != null) {
-            credentialModel.setId(smsCredentialModel.getId());
-            user.credentialManager().updateStoredCredential(credentialModel);
-            return credentialModel;
+    private CredentialModel updateCredential(RealmModel realm, UserModel user, SmsCredentialModel newCredential) {
+        CredentialModel oldCredential = getSmsCredentialModel(realm, user);
+        if (oldCredential != null) {
+            LOGGER.debugf("updateCredential: Update old credential");
+            return updateAvailableCredential(user, oldCredential, newCredential);
         } else {
-            return addCredential(realm, user, credentialModel);
+            LOGGER.debugf("updateCredential: No credential found. So add new credential to user");
+            return addCredential(realm, user, newCredential);
         }
+    }
+
+    private CredentialModel updateAvailableCredential(UserModel user, CredentialModel oldCredential, SmsCredentialModel newCredential) {
+        newCredential.setId(oldCredential.getId());
+        user.credentialManager().updateStoredCredential(newCredential);
+        return newCredential;
     }
 
     private CredentialModel getSmsCredentialModel(RealmModel realm, UserModel user) {
@@ -93,7 +102,7 @@ public class SmsCredentialProvider implements CredentialProvider<SmsCredentialMo
 
     @Override
     public boolean deleteCredential(RealmModel realm, UserModel user, String credentialId) {
-        logger.debugv("Delete Sms credential. username = {0}, credentialId = {1}", user.getUsername(), credentialId);
+        LOGGER.debugv("Delete Sms credential. username = {0}, credentialId = {1}", user.getUsername(), credentialId);
         return user.credentialManager().removeStoredCredentialById(credentialId);
     }
 
