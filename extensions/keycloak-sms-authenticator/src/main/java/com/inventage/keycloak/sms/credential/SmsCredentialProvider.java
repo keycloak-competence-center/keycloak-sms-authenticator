@@ -65,7 +65,6 @@ public class SmsCredentialProvider implements CredentialProvider<SmsCredentialMo
                 (
                     cred -> {
                         try {
-                            final SmsCredentialData smsCredentialData;
                             final SmsCredentialData smsCredentialData = JsonSerialization.readValue(cred.getCredentialData(), SmsCredentialData.class);
                             return Objects.equals(smsCredentialData.getPhoneNumber(), credentialModel.getSmsCredentialData().getPhoneNumber());
                         } catch (IOException e) {
