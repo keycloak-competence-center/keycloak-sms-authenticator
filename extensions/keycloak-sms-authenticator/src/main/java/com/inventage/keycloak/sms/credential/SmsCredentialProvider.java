@@ -49,7 +49,7 @@ public class SmsCredentialProvider implements CredentialProvider<SmsCredentialMo
             return updateAvailableCredential(user, oldCredential, newCredential);
         }
 
-        LOGGER.debugf("addCredential: User already has not a credential with same phone number. So new credential will be added.");
+        LOGGER.debugf("addCredential: New SMS credential will be added.");
         return user.credentialManager().createStoredCredential(newCredential);
     }
 
@@ -64,8 +64,8 @@ public class SmsCredentialProvider implements CredentialProvider<SmsCredentialMo
             .filter
                 (
                     cred -> {
-                        final SmsCredentialData smsCredentialData;
                         try {
+                            final SmsCredentialData smsCredentialData;
                             smsCredentialData = JsonSerialization.readValue(cred.getCredentialData(), SmsCredentialData.class);
                             return Objects.equals(smsCredentialData.getPhoneNumber(), credentialModel.getSmsCredentialData().getPhoneNumber());
                         } catch (IOException e) {
