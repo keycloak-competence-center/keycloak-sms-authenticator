@@ -8,6 +8,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.message.BasicHeader;
+import org.jboss.logging.Logger;
 
 import java.io.IOException;
 import java.net.URI;
@@ -18,11 +19,15 @@ import java.net.URISyntaxException;
  */
 public class SmsFactorFacade {
 
+    private static final Logger LOGGER = Logger.getLogger(SmsFactorFacade.class);
+
     private final HttpClient httpClient;
     private final String serviceUrl;
     private final String token;
 
     public SmsFactorFacade(HttpClient httpClient, String serviceUrl, String token) {
+        LOGGER.debugf("SmsFactorFacade: Creating SMSFactor facade with serviceUrl '%s'", serviceUrl);
+
         this.httpClient = httpClient;
         this.serviceUrl = serviceUrl;
         this.token = token;
