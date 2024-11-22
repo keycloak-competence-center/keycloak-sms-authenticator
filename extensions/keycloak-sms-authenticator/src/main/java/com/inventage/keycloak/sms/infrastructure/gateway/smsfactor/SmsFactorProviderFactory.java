@@ -24,12 +24,18 @@ public class SmsFactorProviderFactory implements SmsServiceProviderFactory, Comp
 
     /* package private */ static final String PROVIDER_ID = "sms-factor";
 
+    private static SmsFactorProvider smsFactorProvider;
+
     /**
      * {@inheritDoc}
      */
     @Override
     public SmsServiceProvider create(KeycloakSession session, ComponentModel model) {
-        return new SmsFactorProvider(session);
+        if (smsFactorProvider == null) {
+            smsFactorProvider = new SmsFactorProvider(session);
+        }
+
+        return smsFactorProvider;
     }
 
     /**
@@ -37,7 +43,11 @@ public class SmsFactorProviderFactory implements SmsServiceProviderFactory, Comp
      */
     @Override
     public SmsServiceProvider create(KeycloakSession session) {
-        return new SmsFactorProvider(session);
+        if (smsFactorProvider == null) {
+            smsFactorProvider = new SmsFactorProvider(session);
+        }
+
+        return smsFactorProvider;
     }
 
     @Override
