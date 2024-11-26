@@ -58,6 +58,12 @@ public class SmsFactorProvider implements SmsServiceProvider {
         // NOP
     }
 
+    private SmsFactorFacade createSmsFactorFacade() {
+        final String serviceUrl = getSmsFactorServiceUrl();
+        final String token = getSmsFactorToken();
+        return new SmsFactorFacade(session.getProvider(HttpClientProvider.class).getHttpClient(), serviceUrl, token);
+    }
+
     private String getSenderAddress() {
         if (componentModel.isPresent()) {
             return componentModel.get().get(SMS_FACTOR_SENDER_ADDRESS_CONFIG);
@@ -90,18 +96,16 @@ public class SmsFactorProvider implements SmsServiceProvider {
         return SMS_FACTOR_TOKEN_DEFAULT;
     }
 
-    private SmsFactorFacade createSmsFactorFacade() {
-        String serviceUrl = SMS_FACTOR_SERVICE_URL_DEFAULT;
-
-        final String envVar = System.getenv(SMS_FACTOR_SERVICE_URL_ENV);
-        if (StringUtil.isNotBlank(envVar)) {
-            serviceUrl = envVar;
-        }
-
+    private String getSmsFactorServiceUrl() {
         if (componentModel.isPresent()) {
-            serviceUrl = componentModel.get().get(SMS_FACTOR_SERVICE_URL_CONFIG);
+            return componentModel.get().get(SMS_FACTOR_SERVICE_URL_CONFIG);
         }
 
-        return new SmsFactorFacade(session.getProvider(HttpClientProvider.class).getHttpClient(), serviceUrl, getSmsFactorToken());
+        final String baseUrl = System.getenv(SMS_FACTOR_SERVICE_URL_ENV);
+        if (StringUtil.isNotBlank(baseUrl)) {
+            return baseUrl;
+        }
+
+        return SMS_FACTOR_SERVICE_URL_DEFAULT;
     }
 }
