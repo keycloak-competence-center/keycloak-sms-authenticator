@@ -1,0 +1,9 @@
+name: Build Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - github-actions
+  pull_request:
+  workflow_dispatch:
