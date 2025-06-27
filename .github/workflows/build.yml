@@ -50,7 +50,7 @@ jobs:
       - name: Run flatten-maven-plugin for extension
         run: mvn process-resources org.codehaus.mojo:flatten-maven-plugin:1.7.0:flatten -Dflatten.dependency.mode=all -Dflatten.mode=bom -Dee.maven.groupId=org.wildfly --file extensions/keycloak-sms-authenticator/pom.xml
 
-      - name: Build with Maven
+      - name: Deploy with Maven
         run: mvn -B deploy -Dbuild.number=${{github.run_number}} -Dbuild.revision=${GITHUB_SHA} --file extensions/keycloak-sms-authenticator/.flattened-pom.xml
         env:
           KCC_CI_USERNAME: ${{secrets.KCC_CI_USERNAME}}
