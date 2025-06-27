@@ -26,6 +26,7 @@ set -euCo pipefail
 DEFAULT_EXCLUDED_PATTERNS=(
   ".*pom\.xml$"
   ".*Chart\.yaml$"
+  ".*values\.yaml$"
   # ".*\.properties$"
   # ".*\.lock$"
   # ".*package-lock\.json$"
