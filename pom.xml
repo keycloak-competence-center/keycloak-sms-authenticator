@@ -40,6 +40,7 @@
         <testcontainers-postgres.version>1.19.3</testcontainers-postgres.version>
         <junit-jupiter-engine.version>5.9.2</junit-jupiter-engine.version>
         <failsafe-plugin.version>3.2.2</failsafe-plugin.version>
+        <maven.deploy.skip>true</maven.deploy.skip>
     </properties>
 
     <dependencyManagement>
@@ -363,9 +364,9 @@
 
     <distributionManagement>
         <repository>
-            <id>github</id>
-            <name>GitHub Packages</name>
-            <url>https://maven.pkg.github.com/keycloak-competence-center/keycloak-sms-authenticator</url>
+            <id>kcc-maven-staging</id>
+            <name>Nexus 3 kcc-maven-staging</name>
+            <url>https://nexus3.inventage.com/repository/kcc-maven-staging/</url>
         </repository>
     </distributionManagement>
 
