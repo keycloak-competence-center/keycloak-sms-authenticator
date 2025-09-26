@@ -5,7 +5,7 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
- *
+ * SPI for SmsServiceProvider implementations.
  */
 public class SmsServiceSpi implements Spi {
 

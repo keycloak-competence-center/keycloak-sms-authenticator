@@ -9,16 +9,7 @@ To install the SMS Authenticator add the jar to the Keycloak server:
 cp target/keycloak-sms-authenticator-<VERSION>.jar <KEYCLOAK_HOME>/providers/
 ```
 
-Gateways
----
-
-Following SMS Gateways implementations are supported:
-
-| Name                        |                Provider Id                 | Description                                                   |
-|-----------------------------|:------------------------------------------:|---------------------------------------------------------------|
-| SMS to console |              `sms-to-console`              | Writes SMS Code to console                                    |
-|        Uniport SMS        | `uniport-sms-service` | Sends SMS request to [Uniport](https://uniport.ch)            |
-|      SMS Factor          |                 `sms-factor`                 | Sends SMS request to [SMS Factor](https://www.smsfactor.com/) |
+Upon successful installation the authenticator "SMS Authentication" (`sms-authenticator`) and the required action "Configure SMS" (`sms-config`) are available.
 
 Configuration
 ---
@@ -89,6 +80,29 @@ The following snippets belong all to the same JSON file
     ]
 }
 ```
+
+Gateways
+---
+
+Following SMS Gateway implementations are supported:
+
+| Name                        |                Provider Id                 | Description                                                   |
+|-----------------------------|:------------------------------------------:|---------------------------------------------------------------|
+| SMS to console |              `sms-to-console`              | Writes SMS Code to console                                    |
+|        Uniport SMS        | `uniport-sms-service` | Sends SMS request to [Uniport](https://uniport.ch)            |
+|      SMS Factor          |                 `sms-factor`                 | Sends SMS request to [SMS Factor](https://www.smsfactor.com/) |
+
+The [sms-service](./src/main/java/com/inventage/keycloak/sms/gateway/SmsServiceSpi.java) SPI allows to add addtional custom SMS Gateway implementations.
+
+### SMS to console
+
+### Uniport SMS
+
+https://docs.uniport.ch/introduction/sms/
+
+### SMS Factor
+
+https://www.smsfactor.com/
 
 ```json
 {
