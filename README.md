@@ -3,6 +3,11 @@ Keycloak SMS Authenticator
 
 This project provides the [Keycloak SMS authenticator](./extensions/keycloak-sms-authenticator/README.md) extension as its only deliverable.
 
+- [Build Pipeline]
+- [Release Pipeline]
+- [Artifacts Release Repository]
+- [Artifacts Release Candidate Repository]
+
 The following submodules have the artifact deployment to the maven repository skipped in their pom.xml:
 
 - config
@@ -30,4 +35,8 @@ This project is based on the [custom Keycloak template](https://github.com/inven
 Please see the tutorial [building a custom Keycloak container image](https://keycloak.ch/keycloak-tutorials/tutorial-custom-keycloak/) for the details of this project.
 
 [Keycloak]: https://keycloak.org
+[Build Pipeline]: https://github.com/keycloak-competence-center/keycloak-sms-authenticator/actions/workflows/build.yml
+[Release Pipeline]: https://github.com/keycloak-competence-center/keycloak-sms-authenticator/actions/workflows/release.yml
+[Artifacts Release Repository]: https://artifacts.inventage.com/#browse/browse:kcc-maven
+[Artifacts Release Candidate Repository]: https://artifacts.inventage.com/#browse/browse:kcc-maven-staging
 
