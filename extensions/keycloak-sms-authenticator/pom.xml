@@ -15,7 +15,6 @@
     <url>https://github.com/keycloak-competence-center/keycloak-sms-authenticator</url>
 
     <properties>
-        <maven.deploy.skip>false</maven.deploy.skip>
         <central.autoPublish>false</central.autoPublish>
     </properties>
 
@@ -64,15 +63,9 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
             </plugin>
-            <!-- deploy extension -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <!-- config is defined in parent pom -->
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-deploy-plugin</artifactId>
+                <artifactId>maven-compiler-plugin</artifactId>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>

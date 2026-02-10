@@ -80,7 +80,6 @@
         <testcontainers.version>1.20.6</testcontainers.version>
         <failsafe-plugin.version>3.2.5</failsafe-plugin.version>
         <chart.directory>${project.basedir}/src/generated/keycloak-custom-chart</chart.directory>
-        <maven.deploy.skip>true</maven.deploy.skip>
     </properties>
 
     <dependencyManagement>
