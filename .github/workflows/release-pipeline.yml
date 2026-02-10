@@ -185,6 +185,8 @@ jobs:
   bump-version:
     name: Bump version of the head
     needs: [parse, tag-and-release]
+    permissions:
+      contents: write
     uses: ./.github/workflows/version-bump.yml
     with:
       major: ${{ needs.parse.outputs.major }}
