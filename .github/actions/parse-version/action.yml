@@ -1,0 +1,58 @@
+name: Parse Version
+description: Parses a version string against the format semver-date-build_number-git_short_sha
+
+inputs:
+  version:
+    description: 'Version string to parse (e.g., 9.5.0-202504221620-1321-d65d211b)'
+    required: true
+
+outputs:
+  sem_ver:
+    description: the semantic version in the version string
+    value: ${{ steps.version.outputs.SEM_VER }}
+  build_date:
+    description: the build date in the version string
+    value: ${{ steps.version.outputs.BUILD_DATE }}
+  run_id:
+    description: the run id in the version string
+    value: ${{ steps.version.outputs.RUN_ID }}
+  commit_sha:
+    description: the commit sha in the version string
+    value: ${{ steps.version.outputs.COMMIT_SHA }}
+  major:
+    description: the major version in the version string
+    value: ${{ steps.semver.outputs.MAJOR }}
+  minor:
+    description: The minor version in the version string
+    value: ${{ steps.semver.outputs.MINOR }}
+  patch:
+    description: The patch version in the version string
+    value: ${{ steps.semver.outputs.PATCH }}
+
+runs:
+  using: composite
+  steps:
+    - name: Parse version
+      id: version
+      shell: bash
+      run: |
+        IFS=- read SEM_VER BUILD_DATE RUN_ID COMMIT_SHA <<< "${{ inputs.version }}"
+
+        cat >> $GITHUB_OUTPUT <<EOF  
+        SEM_VER=$SEM_VER
+        BUILD_DATE=$BUILD_DATE
+        RUN_ID=$RUN_ID
+        COMMIT_SHA=$COMMIT_SHA
+        EOF
+
+    - name: Parse SemVer
+      id: semver
+      shell: bash
+      run: |
+        IFS=. read MAJOR MINOR PATCH <<< "${{ steps.version.outputs.SEM_VER }}"
+
+        cat >> $GITHUB_OUTPUT <<EOF  
+        MAJOR=$MAJOR
+        MINOR=$MINOR
+        PATCH=$PATCH
+        EOF

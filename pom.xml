@@ -9,6 +9,44 @@
     <version>1.2.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
+    <name>SMS Authenticator extension for Keycloak</name>
+    <description>A Keycloak extension enabling SMS-based two-factor authentication (2FA) by sending a code to the user's mobile phone for verification.</description>
+    <url>https://github.com/keycloak-competence-center/keycloak-sms-authenticator</url>
+
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Edwin Steiner</name>
+            <email>edwin.steiner@inventage.com</email>
+            <organization>Inventage AG</organization>
+            <organizationUrl>https://inventage.com/</organizationUrl>
+        </developer>
+        <developer>
+            <name>David Bidjan</name>
+            <email>david.bidjan@inventage.com</email>
+            <organization>Inventage AG</organization>
+            <organizationUrl>https://inventage.com/</organizationUrl>
+        </developer>
+        <developer>
+            <name>Christopher Signer</name>
+            <email>christopher.signer@inventage.com</email>
+            <organization>Inventage AG</organization>
+            <organizationUrl>https://inventage.com/</organizationUrl>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git://github.com/keycloak-competence-center/keycloak-sms-authenticator.git</connection>
+        <developerConnection>scm:git:ssh://github.com/keycloak-competence-center/keycloak-sms-authenticator.git</developerConnection>
+        <url>https://github.com/keycloak-competence-center/keycloak-sms-authenticator/tree/main</url>
+    </scm>
+
     <modules>
         <module>server</module>
         <module>config</module>
@@ -26,21 +64,22 @@
         <keycloak.target.dir>../server/${keycloak.dir}/</keycloak.target.dir> <!-- used in config & extension modules -->
         <keycloak.providers.dir>../../server/${keycloak.dir}/providers</keycloak.providers.dir> <!-- used in extension modules -->
         <keycloak.themes.dir>../server/${keycloak.dir}/themes</keycloak.themes.dir> <!-- used in themes module -->
-        <docker.registry>docker-registry.inventage.com:10094/</docker.registry>
+        <docker.registry>ghcr.io/inventage/keycloak-sms-authenticator/</docker.registry>
         <docker.image.name>com.inventage.keycloak.sms-authenticator.container</docker.image.name>
         <docker.contextDir>${project.build.outputDirectory}</docker.contextDir>
         <docker.verbose>true</docker.verbose>
         <docker.imagePropertyConfiguration>override</docker.imagePropertyConfiguration>
+        <helm.registry>ghcr.io/inventage/keycloak.sms-authenticator</helm.registry>
         <!-- versions -->
-        <keycloak.version>26.3.5</keycloak.version> <!-- update also keycloak-config-cli.version -->
+        <keycloak.version>26.5.2</keycloak.version> <!-- update also keycloak-config-cli.version -->
         <keycloak-config-cli.version>26.1.0_v6.4.0</keycloak-config-cli.version> <!-- from https://github.com/adorsys/keycloak-config-cli/releases -->
         <auto-service.version>1.0.1</auto-service.version>
         <!-- https://github.com/dasniko/testcontainers-keycloak/releases -->
-        <testcontainers-keycloak.version>3.4.0</testcontainers-keycloak.version>
-        <testcontainers-postgres.version>1.19.3</testcontainers-postgres.version>
-        <junit-jupiter.version>5.9.2</junit-jupiter.version>
-        <failsafe-plugin.version>3.2.2</failsafe-plugin.version>
-        <maven.deploy.skip>true</maven.deploy.skip>
+        <testcontainers-keycloak.version>3.7.0</testcontainers-keycloak.version>
+        <testcontainers-postgres.version>1.21.1</testcontainers-postgres.version>
+        <testcontainers.version>1.20.6</testcontainers.version>
+        <failsafe-plugin.version>3.2.5</failsafe-plugin.version>
+        <chart.directory>${project.basedir}/src/generated/keycloak-custom-chart</chart.directory>
     </properties>
 
     <dependencyManagement>
@@ -60,24 +99,12 @@
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-runner</artifactId>
-                <version>3.2.0.Final</version>
-            </dependency>
             <!-- utils -->
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
                 <version>3.6</version>
             </dependency>
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter</artifactId>
-                <version>${junit-jupiter.version}</version>
-                <scope>test</scope>
-            </dependency>
-
             <!-- testcontainers -->
             <dependency>
                 <groupId>com.github.dasniko</groupId>
@@ -88,7 +115,7 @@
             <dependency>
                 <groupId>org.testcontainers</groupId>
                 <artifactId>junit-jupiter</artifactId>
-                <version>${testcontainers-postgres.version}</version>
+                <version>${testcontainers.version}</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
@@ -123,6 +150,9 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-deploy-plugin</artifactId>
                     <version>3.1.1</version>
+                    <configuration>
+                        <skip>true</skip>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -157,12 +187,39 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>3.2.1</version>
+                    <version>3.5.0</version>
+                    <configuration>
+                        <excludedGroups>integration</excludedGroups>
+                        <systemPropertyVariables>
+                            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                            <!--suppress UnresolvedMavenProperty -->
+                            <maven.home>${maven.home}</maven.home>
+                        </systemPropertyVariables>
+                    </configuration>
                 </plugin>
+                <!-- integration testing: https://maven.apache.org/surefire/maven-failsafe-plugin/ -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-failsafe-plugin</artifactId>
                     <version>${failsafe-plugin.version}</version>
+                    <configuration>
+                        <systemPropertyVariables>
+                            <api.version>1.44</api.version> <!-- https://github.com/testcontainers/testcontainers-java/issues/11212 -->
+                            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                        </systemPropertyVariables>
+                        <includes>
+                            <include>**/*</include>
+                        </includes>
+                        <groups>integration</groups> <!-- for tests annotated with `@Tag("integration")` -->
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>integration-test</goal>
+                                <goal>verify</goal>
+                            </goals>
+                        </execution>
+                    </executions>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -172,7 +229,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-dependency-plugin</artifactId>
-                    <version>3.1.2</version>
+                    <version>3.8.1</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -188,7 +245,7 @@
                 <plugin>
                     <groupId>io.fabric8</groupId>
                     <artifactId>docker-maven-plugin</artifactId>
-                    <version>0.40.1</version>
+                    <version>0.45.0</version>
                     <configuration>
                         <images>
                             <image>
@@ -225,6 +282,20 @@
                                 <goal>tag</goal>
                             </goals>
                         </execution>
+                        <!-- push image -->
+                        <execution>
+                            <id>push-image</id>
+                            <phase>deploy</phase>
+                            <goals>
+                                <goal>push</goal>
+                            </goals>
+                            <configuration>
+                                <authConfig>
+                                    <username>${env.GITHUB_ACTOR}</username>
+                                    <password>${env.GITHUB_TOKEN}</password>
+                                </authConfig>
+                            </configuration>
+                        </execution>
                     </executions>
                 </plugin>
                 <plugin>
@@ -234,26 +305,32 @@
                     <version>6.13.0</version>
                     <extensions>true</extensions>
                     <configuration>
+                        <helmExtraRepos>
+                            <helmRepo>
+                                <name>Codecentric Helm Charts</name>
+                                <url>https://codecentric.github.io/helm-charts</url>
+                            </helmRepo>
+                        </helmExtraRepos>
                         <chartVersion>${project.version}</chartVersion>
-                        <chartDirectory>${project.basedir}/helm/target/chart</chartDirectory>
+                        <chartDirectory>${chart.directory}</chartDirectory>
+                        <!-- https://github.com/kokuwaio/helm-maven-plugin/issues/427 -->
+                        <helmVersion>3.19.2</helmVersion>
                         <useLocalHelmBinary>false</useLocalHelmBinary>
                         <debug>true</debug>
-                        <skipUpload>false</skipUpload>
-                        <skipPushLogin>true</skipPushLogin>
                         <uploadRepoSnapshot>
                             <name>ghcr</name>
-                            <url>ghcr.io/keycloak-competence-center</url>
-                            <type>NEXUS</type>
+                            <url>${helm.registry}</url>
                             <username>${env.GITHUB_ACTOR}</username>
                             <password>${env.GITHUB_TOKEN}</password>
                         </uploadRepoSnapshot>
                         <uploadRepoStable>
                             <name>ghcr</name>
-                            <url>ghcr.io/keycloak-competence-center</url>
-                            <type>NEXUS</type>
+                            <url>${helm.registry}</url>
                             <username>${env.GITHUB_ACTOR}</username>
                             <password>${env.GITHUB_TOKEN}</password>
                         </uploadRepoStable>
+                        <skipUpload>true</skipUpload> <!-- upload is for HTTP PUT, we use push i.e. OCI-->
+                        <skipPushLogin>true</skipPushLogin> <!-- authentication happens with registry-login  -->
                     </configuration>
                     <executions>
                         <execution>
@@ -266,9 +343,57 @@
                                 <goal>init</goal>
                                 <goal>lint</goal>
                                 <goal>package</goal>
-                                <!--<goal>push</goal>-->
+<!--                                <goal>registry-login</goal>-->
+<!--                                <goal>push</goal>-->
                             </goals>
                             <phase>deploy</phase>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>flatten-maven-plugin</artifactId>
+                    <version>1.7.3</version>
+
+                    <configuration>
+                        <flattenMode>bom</flattenMode>
+                        <flattenDependencyMode>all</flattenDependencyMode>
+                    </configuration>
+
+                    <executions>
+                        <execution>
+                            <id>flatten</id>
+                            <phase>process-resources</phase>
+                            <goals>
+                                <goal>flatten</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-source-plugin</artifactId>
+                    <version>3.3.1</version>
+                    <executions>
+                        <execution>
+                            <id>attach-sources</id>
+                            <goals>
+                                <goal>jar-no-fork</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>3.12.0</version>
+                    <executions>
+                        <execution>
+                            <id>attach-javadocs</id>
+                            <goals>
+                                <goal>jar</goal>
+                            </goals>
                         </execution>
                     </executions>
                 </plugin>
@@ -369,5 +494,4 @@
             <url>https://nexus3.inventage.com/repository/kcc-maven-staging/</url>
         </repository>
     </distributionManagement>
-
 </project>

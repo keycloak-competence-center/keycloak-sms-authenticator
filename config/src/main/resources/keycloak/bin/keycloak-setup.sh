@@ -21,19 +21,22 @@ runKeycloakConfigCli() {
   echo "--- Running Keycloak Config CLI"
   echo ""
 
+  echo "Use keycloak-config-cli with client '${KEYCLOAK_CLIENTID}'"
   # run keycloak-config-cli
+  # https://github.com/adorsys/keycloak-config-cli#keycloak-options
   java -jar "${BASEDIR}"/client/keycloak-config-cli-"${keycloak-config-cli.version}".jar \
-      --keycloak.url=http://localhost:8080/ \
-      --keycloak.ssl-verify=true \
-      --keycloak.user="${KEYCLOAK_ADMIN}" \
-      --keycloak.password="${KEYCLOAK_ADMIN_PASSWORD}" \
-      --keycloak.availability-check.enabled=true \
-      --keycloak.availability-check.timeout=300s \
-      --import.var-substitution.enabled=true \
-      --import.managed.client=no-delete \
-      --import.managed.client-scope=no-delete \
-      --import.managed.client-scope-mapping=no-delete \
-      --import.files.locations="${BASEDIR}"/../setup/*.json
+    --keycloak.url=http://localhost:8080/ \
+    --keycloak.ssl-verify=true \
+    --keycloak.availability-check.enabled=true \
+    --keycloak.availability-check.timeout=300s \
+    --import.var-substitution.enabled=true \
+    --import.managed.client=no-delete \
+    --import.managed.client-scope=no-delete \
+    --import.managed.client-scope-mapping=no-delete \
+    --import.files.locations="${BASEDIR}"/../setup/*.json \
+    --logging.level.root=info \
+    --logging.level.keycloak-config-cli=info \
+    --logging.level.realm-config=info
 }
 
 runKeycloakCli() {
@@ -41,9 +44,18 @@ runKeycloakCli() {
       KCADM="${BASEDIR}"/kcadm.sh
       echo "Using $KCADM as the admin CLI."
   fi
+  KCADM_CONFIG="--config /tmp/.keycloak/kcadm.config" # required to be writable for the current user
 
-  # login to admin console
-  ${KCADM} config credentials --server http://localhost:8080 --user "${KEYCLOAK_ADMIN}" --password "${KEYCLOAK_ADMIN_PASSWORD}" --realm master
+  eval "ADMIN_CLIENT_ID=${KEYCLOAK_CLIENTID}"
+  eval "ADMIN_CLIENT_SECRET=${KEYCLOAK_CLIENTSECRET}"
+
+  echo "Use kcadm with client '${ADMIN_CLIENT_ID}'"
+  ${KCADM} config credentials \
+    --server http://localhost:8080 \
+    --client "${ADMIN_CLIENT_ID}" \
+    --secret "${ADMIN_CLIENT_SECRET}" \
+    --realm master \
+    ${KCADM_CONFIG}
 
   # helper functions using kc admin cli
   source "${BASEDIR}"/keycloak-cli-helpers.sh
@@ -60,7 +72,7 @@ runKeycloakConfigCli
 echo " "
 echo "----------------- KEYCLOAK CLI ------------------"
 echo " "
-# runKeycloakCli : temporary disabled because of error `Failed to create config file: /.keycloak/kcadm.config`
+runKeycloakCli
 
 echo " "
 echo "--------------- KEYCLOAK SETUP FINISHED ----------------"

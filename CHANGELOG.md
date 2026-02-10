@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 1.2.0-[Unreleased]
 
+- Merge keycloak-custom, bumping the Keycloak version to 26.5.2.
+- Update the workflows and actions to be analogous to keycloak-database-userstorage for publishing with maven central.
+
 ## [1.1.0]-202509261212-15-53e6f2a
 
 ### Changed

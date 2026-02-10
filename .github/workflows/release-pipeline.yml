@@ -1,0 +1,195 @@
+name: Release Pipeline
+run-name: 'Release of version ${{ inputs.version }} triggered by ${{ github.actor }} on ${{ github.ref }}'
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'The version to release'
+        type: string
+        required: true
+      target_branch:
+        description: 'The branch to release on. Defaults to main'
+        default: 'main'
+        type: string
+        required: false
+
+jobs:
+  parse:
+    name: Version info
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      sem_ver: ${{ steps.parse.outputs.sem_ver }}
+      build_date: ${{ steps.parse.outputs.build_date }}
+      run_id: ${{ steps.parse.outputs.run_id }}
+      commit_sha: ${{ steps.parse.outputs.commit_sha }}
+      major: ${{ steps.parse.outputs.major }}
+      minor: ${{ steps.parse.outputs.minor }}
+      patch: ${{ steps.parse.outputs.patch }}
+      full_sha: ${{ steps.validate.outputs.full_sha }}
+      pre_release: ${{ steps.validate.outputs.pre_release }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Validate version format
+        uses: ./.github/actions/validate-version
+        with:
+          version: ${{ inputs.version }}
+      - name: Check if target branch exists
+        id: branch_check
+        uses: ./.github/actions/ensure-branch
+        with:
+          branch: ${{ inputs.target_branch }}
+      - name: Parse version string
+        id: parse
+        uses: ./.github/actions/parse-version
+        with:
+          version: ${{ inputs.version }}
+      - name: Validate existence
+        id: validate
+        run: |
+          # Resolve short SHA to full SHA using GitHub API
+          # Fail if gh command fails (e.g., no token, network error)
+          FULL_SHA=$(gh api /repos/"$GITHUB_REPOSITORY"/commits/"${{ steps.parse.outputs.commit_sha }}" --jq '.sha') || {
+            echo "Error: gh api command failed to resolve ${{ steps.parse.outputs.commit_sha }}" >&2
+            exit 1
+          }
+
+          # Check if FULL_SHA is empty
+          if [ -z "$FULL_SHA" ]; then
+            echo "Error: Failed to resolve ref ${{ steps.parse.outputs.commit_sha }} (possibly invalid SHA or missing GH_TOKEN)" >&2
+            exit 1
+          fi
+
+          echo "Expanded ref ${{ steps.parse.outputs.commit_sha }} to SHA $FULL_SHA"
+          echo "FULL_SHA=$FULL_SHA" >> $GITHUB_OUTPUT
+          
+          BRANCH_NAME="${{ inputs.target_branch }}"
+          # We compare the branch's HEAD (e.g., 'main') against the commit
+          # The format is /compare/{base}...{head}
+          STATUS=$(gh api /repos/"$GITHUB_REPOSITORY"/compare/"$FULL_SHA"..."$BRANCH_NAME" --jq '.status')
+
+          if [[ "$STATUS" == "ahead" || "$STATUS" == "identical" ]]; then
+            echo "✅ Success: Commit $FULL_SHA is on branch $BRANCH_NAME (Status: $STATUS)."
+          else
+            echo "❌ Error: Commit $FULL_SHA is NOT on branch $BRANCH_NAME (Status: $STATUS)."
+            echo "This commit may be on a different branch or the branch is behind this commit."
+            exit 1
+          fi
+
+          # Check whether this version is a pre-release
+          if [[ "${{ steps.parse.outputs.sem_ver }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+- ]]; then
+            echo "PRE_RELEASE=true" >> $GITHUB_OUTPUT
+          else
+            echo "PRE_RELEASE=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "## Version info" >> $GITHUB_STEP_SUMMARY
+          echo "- **major**: \`${{ steps.parse.outputs.major }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **minor**: \`${{ steps.parse.outputs.minor }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **patch**: \`${{ steps.parse.outputs.patch }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **semver**: \`${{ steps.parse.outputs.sem_ver }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **sha** (short): \`${{ steps.parse.outputs.commit_sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **sha** (full): \`${{ steps.validate.outputs.full_sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **pre release?**: \`${{ steps.validate.outputs.pre_release }}\`" >> $GITHUB_STEP_SUMMARY
+
+  tag-and-release:
+    name: Create Tag, Build, Sign, Install, Deploy
+    runs-on: ubuntu-latest
+    needs: parse
+    permissions:
+      contents: write
+    outputs:
+      tag_name: ${{ steps.tag.outputs.tag_name }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.parse.outputs.full_sha }}
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Configure Git user
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+
+      - name: Create a tag
+        id: tag
+        run: |
+          git tag -a -m "${{ needs.parse.outputs.full_sha }}" ${{ needs.parse.outputs.sem_ver }}
+          git tag -l
+          echo "TAG_NAME=${{ needs.parse.outputs.sem_ver }}" >> $GITHUB_OUTPUT
+
+      # There's an issue in GitHub where changes cannot be pushed from an action if the tag points to a commit where
+      # the contents of .github/workflows/ are not identical to the contents of .github/workflows/ on the latest commit of any branch!
+      # @see https://github.com/orgs/community/discussions/151442
+      - name: Push tag
+        run: |
+          git push origin ${{ steps.tag.outputs.tag_name }}
+
+      - name: Summarize tagging
+        run: |
+          echo "## Tag Details" >> $GITHUB_STEP_SUMMARY
+          echo "- **tag**: \`${{ steps.tag.outputs.tag_name }}\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Setup Java
+        uses: ./.github/actions/setup-java
+
+      - name: Generate settings.xml for Maven Central
+        uses: s4u/maven-settings-action@v3.1.0
+        with:
+          servers: |
+            [
+              {
+                "id": "central",
+                "username": "${{ env.CENTRAL_USERNAME }}",
+                "password": "${{ env.CENTRAL_TOKEN }}"
+              }
+            ]
+        env:
+          CENTRAL_USERNAME: ${{ secrets.MVN_CENTRAL_PUBLISH_USERNAME }}
+          CENTRAL_TOKEN: ${{ secrets.MVN_CENTRAL_PUBLISH_PASSWORD }}
+
+      - name: Import GPG key
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.PGP_MVN_PUBLISH_KEY_TEST }}
+          passphrase: ${{ secrets.PGP_MVN_PUBLISH_KEY_PASSPHRASE_TEST }}
+
+      - name: Set Release Version in pom.xml
+        run: mvn versions:set -DnewVersion=${{ needs.parse.outputs.sem_ver }}
+
+      - name: Deploy to Maven Central
+        run: mvn -B deploy -P release-to-central,!local-dev -Dbuild.number=${{github.run_number}} -Dbuild.revision=${{ needs.parse.outputs.full_sha }} --file extensions/keycloak-sms-authenticator/pom.xml
+        env:
+          OSSRH_USERNAME: ${{ secrets.MVN_CENTRAL_PUBLISH_USERNAME }}
+          OSSRH_TOKEN: ${{ secrets.MVN_CENTRAL_PUBLISH_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.PGP_MVN_PUBLISH_KEY_PASSPHRASE_TEST }}
+          MAVEN_GPG_KEY: ${{ secrets.PGP_MVN_PUBLISH_KEY_TEST }}
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ inputs.version }}
+          tag_name: ${{ steps.tag.outputs.tag_name }}
+          generate_release_notes: true
+          prerelease: ${{ needs.parse.outputs.pre_release }}
+
+  bump-version:
+    name: Bump version of the head
+    needs: [parse, tag-and-release]
+    permissions:
+      contents: write
+    uses: ./.github/workflows/version-bump.yml
+    with:
+      major: ${{ needs.parse.outputs.major }}
+      minor: ${{ needs.parse.outputs.minor }}
+      patch: ${{ needs.parse.outputs.patch }}
+      branch_name: ${{ inputs.target_branch }}

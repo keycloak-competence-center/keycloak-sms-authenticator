@@ -20,12 +20,14 @@ pom.xml.versionsBackup
 release.properties
 /docker-compose/src/main/resources/keycloak.specific.env
 /docker-compose/src/main/resources/secrets.env
+/extensions/keycloak-sms-authenticator/.flattened-pom.xml
 
 # Postgres data
 /docker-compose/postgres/volume/
 
 Chart.lock
 helm/src/generated/**/*.tgz
+/config/src/main/resources/keycloak/setup/realm-ignored-*.json
 
 # asdf
 .tool-versions

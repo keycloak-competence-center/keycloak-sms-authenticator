@@ -1,0 +1,23 @@
+name: Validate Version
+description: Validates a version string against the format semver-date-build_number-git_short_sha
+inputs:
+  version:
+    description: 'Version string to validate (e.g., 9.5.0-202504221620-1321-d65d211b)'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # Validate version format using inline Bash logic
+    - name: Validate version format
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+      run: |
+        REGEX="^[0-9]+\.[0-9]+\.[0-9]+-[0-9]{12,14}-[0-9]+-[0-9a-f]{7,8}$"
+        if [[ ! $VERSION =~ $REGEX ]]; then
+          echo "Error: Version '$VERSION' does not match the expected format 'semver-date-build_number-git_short_sha' (e.g., 9.5.0-202504221620-1321-d65d211b)"
+          exit 1
+        else
+          echo "Version '$VERSION' is valid"
+        fi

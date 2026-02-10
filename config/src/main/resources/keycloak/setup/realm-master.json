@@ -1,6 +1,7 @@
 {
   "realm": "master",
   "enabled": true,
+  "sslRequired": "$(env:REALM_MASTER_SSL_REQUIRED:-external)",
   "adminEventsEnabled": true,
   "adminEventsDetailsEnabled": true,
   "eventsEnabled": true,
@@ -116,5 +117,88 @@
     "VERIFY_EMAIL_ERROR",
     "VERIFY_PROFILE",
     "VERIFY_PROFILE_ERROR"
+  ],
+  "users":[
+    {
+      "username": "service-account-$(env:KEYCLOAK_CONFIG_CLI_CLIENT_ID:-keycloak-config-cli)",
+      "emailVerified": false,
+      "createdTimestamp": 1740506716110,
+      "enabled": true,
+      "totp": false,
+      "serviceAccountClientId": "$(env:KEYCLOAK_CONFIG_CLI_CLIENT_ID:-keycloak-config-cli)",
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "admin",
+        "default-roles-master"
+      ],
+      "notBefore": 0,
+      "groups": []
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "$(env:KEYCLOAK_CONFIG_CLI_CLIENT_ID:-keycloak-config-cli)",
+      "name": "$(env:KEYCLOAK_CONFIG_CLI_CLIENT_ID:-keycloak-config-cli)",
+      "description": "Used for running keycloak-config-cli",
+      "rootUrl": "",
+      "adminUrl": "",
+      "baseUrl": "https://github.com/adorsys/keycloak-config-cli",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "$(env:KEYCLOAK_CONFIG_CLI_CLIENT_SECRET:-keycloak-config-cli)",
+      "redirectUris": [
+        "/*"
+      ],
+      "webOrigins": [
+        "/*"
+      ],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "publicClient": false,
+      "frontchannelLogout": true,
+      "protocol": "openid-connect",
+      "attributes": {
+        "realm_client": "false",
+        "oidc.ciba.grant.enabled": "false",
+        "client.secret.creation.time": "1740506716",
+        "backchannel.logout.session.required": "true",
+        "frontchannel.logout.session.required": "true",
+        "display.on.consent.screen": "false",
+        "oauth2.device.authorization.grant.enabled": "false",
+        "backchannel.logout.revoke.offline.tokens": "false"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
+      "defaultClientScopes": [
+        "service_account",
+        "web-origins",
+        "acr",
+        "roles",
+        "profile",
+        "basic",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "organization",
+        "microprofile-jwt"
+      ],
+      "access": {
+        "view": true,
+        "configure": true,
+        "manage": true
+      }
+    }
   ]
 }

@@ -1,0 +1,33 @@
+name: Ensure Branch
+description: Checks if a branch exists in the repo and aborts otherwise
+
+inputs:
+  branch:
+    description: 'Branch name to check'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Check if branch exists
+      id: branch_check
+      run: |
+        if [[ -n $(git ls-remote --heads origin ${{ inputs.branch }}) ]]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+        else
+            echo "exists=false" >> $GITHUB_OUTPUT          
+        fi
+      shell: bash
+
+    - name: Branch exists
+      if: steps.branch_check.outputs.exists == 'true'
+      shell: bash
+      run: |
+        echo "Branch '${{ inputs.branch }}' exists!"
+
+    - name: Branch does NOT exists
+      if: steps.branch_check.outputs.exists == 'false'
+      shell: bash
+      run: |
+        echo "Branch '${{ inputs.branch }}' does NOT exist. Aborting..."
+        exit 1
