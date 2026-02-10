@@ -15,7 +15,7 @@
     <url>https://github.com/keycloak-competence-center/keycloak-sms-authenticator</url>
 
     <properties>
-        <central.autoPublish>false</central.autoPublish>
+        <central.autoPublish>true</central.autoPublish>
     </properties>
 
     <dependencies>
