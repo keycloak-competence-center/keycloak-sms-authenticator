@@ -1,0 +1,112 @@
+# Workflow for bumping the version
+name: Version Bump
+
+on:
+  workflow_call:
+    inputs:
+      major:
+        description: 'The major version in SemVer'
+        type: string
+        required: true
+      minor:
+        description: 'The minor version in SemVer'
+        type: string
+        required: true
+      patch:
+        description: 'The patch version in SemVer'
+        type: string
+        required: true
+      branch_name:
+        description: 'The branch name'
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      major:
+        description: 'The major version in SemVer'
+        type: string
+        required: true
+      minor:
+        description: 'The minor version in SemVer'
+        type: string
+        required: true
+      patch:
+        description: 'The patch version in SemVer'
+        type: string
+        required: true
+      branch_name:
+        description: 'The branch name'
+        type: string
+        required: true
+
+env:
+  SNAPSHOT_SUFFIX: SNAPSHOT
+
+jobs:
+  bump:
+    name: Version Bump
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # update version
+    steps:
+      - name: Setup
+        id: setup
+        shell: bash
+        run: |
+          set -u
+
+          NEXT_MINOR="${{ inputs.minor }}"
+          NEXT_PATCH="${{ inputs.patch }}"
+
+          if [[ "${{ inputs.patch }}" -eq 0 ]]; then
+            NEXT_MINOR="$(( ${{ inputs.minor }} + 1 ))"
+          else
+            NEXT_PATCH="$(( ${{ inputs.patch }} + 1 ))"
+          fi
+
+          NEXT_VERSION="${{ inputs.major }}.${NEXT_MINOR}.${NEXT_PATCH}"
+
+          cat >> $GITHUB_OUTPUT <<EOF  
+          NEXT_VERSION=$NEXT_VERSION
+          EOF
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1 # Fetch only the latest commit
+          ref: ${{ inputs.branch_name }}
+
+      - name: Configure Git user
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+
+      - name: Bump version
+        run: mvn versions:set -DnewVersion=${{ steps.setup.outputs.NEXT_VERSION }}-${{ env.SNAPSHOT_SUFFIX }}
+
+      - name: Commit
+        run: |
+          git add $(find . -name 'pom.xml')
+
+          # only commit if there are changes
+          git diff-index --quiet HEAD || git commit \
+            --no-verify \
+            --message "Set version to ${{ steps.setup.outputs.NEXT_VERSION }}-${{ env.SNAPSHOT_SUFFIX }}"
+
+      - name: Push
+        run: |
+          git push origin ${{ inputs.branch_name }}
+
+      - name: Summary
+        shell: bash
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY <<EOF  
+          ## Setup
+          ### Inputs
+          - **major**: \`${{ inputs.major }}\`          
+          - **minor**: \`${{ inputs.minor }}\`          
+          - **patch**: \`${{ inputs.patch }}\`          
+          - **branch_name**: \`${{ inputs.branch_name }}\`          
+          ### Outputs
+          - **NEXT_VERSION**: \`${{ steps.setup.outputs.NEXT_VERSION }}\`
+          EOF

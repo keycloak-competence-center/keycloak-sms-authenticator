@@ -15,7 +15,7 @@ keycloakx:
 
   image:
     # The custom image repository
-    repository: ghcr.io/inventage/keycloak-custom/com.inventage.keycloak.sms-authenticator.container
+    repository: ghcr.io/inventage/keycloak-sms-authenticator/com.inventage.keycloak.sms-authenticator.container
     # Overrides the Keycloak image tag whose default is the chart appVersion
     tag: 1.2.0-SNAPSHOT
 

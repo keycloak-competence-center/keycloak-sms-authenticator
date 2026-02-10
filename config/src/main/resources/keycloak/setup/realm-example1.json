@@ -208,14 +208,6 @@
           "userSetupAllowed": false
         },
         {
-          "authenticator": "no-operation-authenticator",
-          "authenticatorFlow": false,
-          "requirement": "REQUIRED",
-          "priority": 15,
-          "autheticatorFlow": false,
-          "userSetupAllowed": false
-        },
-        {
           "authenticatorFlow": true,
           "requirement": "CONDITIONAL",
           "priority": 20,

@@ -9,6 +9,44 @@
     <version>1.2.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
+    <name>SMS Authenticator extension for Keycloak</name>
+    <description>A Keycloak extension enabling SMS-based two-factor authentication (2FA) by sending a code to the user's mobile phone for verification.</description>
+    <url>https://github.com/keycloak-competence-center/keycloak-sms-authenticator</url>
+
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Edwin Steiner</name>
+            <email>edwin.steiner@inventage.com</email>
+            <organization>Inventage AG</organization>
+            <organizationUrl>https://inventage.com/</organizationUrl>
+        </developer>
+        <developer>
+            <name>David Bidjan</name>
+            <email>david.bidjan@inventage.com</email>
+            <organization>Inventage AG</organization>
+            <organizationUrl>https://inventage.com/</organizationUrl>
+        </developer>
+        <developer>
+            <name>Christopher Signer</name>
+            <email>christopher.signer@inventage.com</email>
+            <organization>Inventage AG</organization>
+            <organizationUrl>https://inventage.com/</organizationUrl>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git://github.com/keycloak-competence-center/keycloak-sms-authenticator.git</connection>
+        <developerConnection>scm:git:ssh://github.com/keycloak-competence-center/keycloak-sms-authenticator.git</developerConnection>
+        <url>https://github.com/keycloak-competence-center/keycloak-sms-authenticator/tree/main</url>
+    </scm>
+
     <modules>
         <module>server</module>
         <module>config</module>
@@ -26,12 +64,12 @@
         <keycloak.target.dir>../server/${keycloak.dir}/</keycloak.target.dir> <!-- used in config & extension modules -->
         <keycloak.providers.dir>../../server/${keycloak.dir}/providers</keycloak.providers.dir> <!-- used in extension modules -->
         <keycloak.themes.dir>../server/${keycloak.dir}/themes</keycloak.themes.dir> <!-- used in themes module -->
-        <docker.registry>ghcr.io/inventage/keycloak-custom/</docker.registry>
+        <docker.registry>ghcr.io/inventage/keycloak-sms-authenticator/</docker.registry>
         <docker.image.name>com.inventage.keycloak.sms-authenticator.container</docker.image.name>
         <docker.contextDir>${project.build.outputDirectory}</docker.contextDir>
         <docker.verbose>true</docker.verbose>
         <docker.imagePropertyConfiguration>override</docker.imagePropertyConfiguration>
-        <helm.registry>ghcr.io/inventage/keycloak-custom</helm.registry>
+        <helm.registry>ghcr.io/inventage/keycloak.sms-authenticator</helm.registry>
         <!-- versions -->
         <keycloak.version>26.5.2</keycloak.version> <!-- update also keycloak-config-cli.version -->
         <keycloak-config-cli.version>26.1.0_v6.4.0</keycloak-config-cli.version> <!-- from https://github.com/adorsys/keycloak-config-cli/releases -->
@@ -310,6 +348,53 @@
 <!--                                <goal>push</goal>-->
                             </goals>
                             <phase>deploy</phase>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>flatten-maven-plugin</artifactId>
+                    <version>1.7.3</version>
+
+                    <configuration>
+                        <flattenMode>bom</flattenMode>
+                        <flattenDependencyMode>all</flattenDependencyMode>
+                    </configuration>
+
+                    <executions>
+                        <execution>
+                            <id>flatten</id>
+                            <phase>process-resources</phase>
+                            <goals>
+                                <goal>flatten</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-source-plugin</artifactId>
+                    <version>3.3.1</version>
+                    <executions>
+                        <execution>
+                            <id>attach-sources</id>
+                            <goals>
+                                <goal>jar-no-fork</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>3.12.0</version>
+                    <executions>
+                        <execution>
+                            <id>attach-javadocs</id>
+                            <goals>
+                                <goal>jar</goal>
+                            </goals>
                         </execution>
                     </executions>
                 </plugin>
