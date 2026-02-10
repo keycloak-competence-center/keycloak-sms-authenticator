@@ -486,4 +486,12 @@
             </build>
         </profile>
     </profiles>
+
+    <distributionManagement>
+        <repository>
+            <id>kcc-maven-staging</id>
+            <name>Nexus 3 kcc-maven-staging</name>
+            <url>https://nexus3.inventage.com/repository/kcc-maven-staging/</url>
+        </repository>
+    </distributionManagement>
 </project>
