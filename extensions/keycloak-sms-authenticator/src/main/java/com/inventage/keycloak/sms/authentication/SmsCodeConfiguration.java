@@ -24,6 +24,12 @@ public class SmsCodeConfiguration implements SmSChallengeConfiguration {
     public static final String SMS_CODE_CHARACTERS_CONFIG = "sms-code-characters";
     public static final String SMS_CODE_CHARACTERS_DEFAULT = null;
 
+    public static final String SMS_PHONE_NUMBER_VALIDATION_REGEX_CONFIG = "sms-phone-number-validation-regex";
+    public static final String SMS_PHONE_NUMBER_VALIDATION_REGEX_DEFAULT = "";
+
+    public static final String SMS_PHONE_NUMBER_VALIDATION_HINT_CONFIG = "sms-phone-number-validation-hint";
+    public static final String SMS_PHONE_NUMBER_VALIDATION_HINT_DEFAULT = "";
+
     private static final String SHOW_PHONE_NUMBER_CONFIG = "sms-show-phone-number";
     private static final boolean SHOW_PHONE_NUMBER_DEFAULT = false;
 
@@ -62,7 +68,21 @@ public class SmsCodeConfiguration implements SmSChallengeConfiguration {
         showPhoneNumber.setLabel("Show Phone Number Switch");
         showPhoneNumber.setHelpText("Switch to control if the phone number on the SMS login screen should be shown.");
 
-        return List.of(smsServiceProviderId, smsCodeLength, smsCodeTtl, smsCodeCharacters);
+        final ProviderConfigProperty phoneNumberValidationRegex = new ProviderConfigProperty();
+        phoneNumberValidationRegex.setType(ProviderConfigProperty.STRING_TYPE);
+        phoneNumberValidationRegex.setDefaultValue(SMS_PHONE_NUMBER_VALIDATION_REGEX_DEFAULT);
+        phoneNumberValidationRegex.setName(SMS_PHONE_NUMBER_VALIDATION_REGEX_CONFIG);
+        phoneNumberValidationRegex.setLabel("Phone Number Validation Regex");
+        phoneNumberValidationRegex.setHelpText("Regular expression to validate phone numbers. Leave empty to accept all formats.");
+
+        final ProviderConfigProperty phoneNumberValidationHint = new ProviderConfigProperty();
+        phoneNumberValidationHint.setType(ProviderConfigProperty.STRING_TYPE);
+        phoneNumberValidationHint.setDefaultValue(SMS_PHONE_NUMBER_VALIDATION_HINT_DEFAULT);
+        phoneNumberValidationHint.setName(SMS_PHONE_NUMBER_VALIDATION_HINT_CONFIG);
+        phoneNumberValidationHint.setLabel("Phone Number Validation Hint");
+        phoneNumberValidationHint.setHelpText("Human-readable hint for the expected phone number format, e.g. '+41 7x xxx xx xx'.");
+
+        return List.of(smsServiceProviderId, smsCodeLength, smsCodeTtl, smsCodeCharacters, showPhoneNumber, phoneNumberValidationRegex, phoneNumberValidationHint);
     }
 
     private static final Logger LOGGER = Logger.getLogger(SmsCodeConfiguration.class);
@@ -93,6 +113,14 @@ public class SmsCodeConfiguration implements SmSChallengeConfiguration {
     @Override
     public String getSmsCodeCharacters() {
         return getStringFromConfig(SMS_CODE_CHARACTERS_CONFIG, SMS_CODE_CHARACTERS_DEFAULT);
+    }
+
+    public String getPhoneNumberValidationRegex() {
+        return getStringFromConfig(SMS_PHONE_NUMBER_VALIDATION_REGEX_CONFIG, SMS_PHONE_NUMBER_VALIDATION_REGEX_DEFAULT);
+    }
+
+    public String getPhoneNumberValidationHint() {
+        return getStringFromConfig(SMS_PHONE_NUMBER_VALIDATION_HINT_CONFIG, SMS_PHONE_NUMBER_VALIDATION_HINT_DEFAULT);
     }
 
     protected String getStringFromConfig(String configKey, String defaultValue) {

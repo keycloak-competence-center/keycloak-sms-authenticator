@@ -8,7 +8,7 @@ import java.time.Duration;
 
 public class KeycloakCustomContainer extends ExtendableKeycloakContainer<KeycloakCustomContainer> {
 
-    public static final String DEFAULT_DOCKER_IMAGE_NAME = "ghcr.io/inventage/keycloak-custom/com.inventage.keycloak.custom.container:latest";
+    public static final String DEFAULT_DOCKER_IMAGE_NAME = "ghcr.io/inventage/keycloak-sms-authenticator/com.inventage.keycloak.sms-authenticator.container:latest";
 
     private static final String DEFAULT_WAIT_LOG_REGEX = ".*KEYCLOAK SETUP FINISHED.*";
     private static final long DEFAULT_STARTUP_TIMEOUT = 3;

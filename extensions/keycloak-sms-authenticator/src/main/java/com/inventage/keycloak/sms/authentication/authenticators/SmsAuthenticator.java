@@ -2,6 +2,7 @@ package com.inventage.keycloak.sms.authentication.authenticators;
 
 import com.inventage.keycloak.sms.authentication.SmsCodeConfiguration;
 import com.inventage.keycloak.sms.authentication.requireactions.SmsRequiredAction;
+import com.inventage.keycloak.sms.gateway.SmsRateLimitedException;
 import com.inventage.keycloak.sms.gateway.SmsServiceProvider;
 import com.inventage.keycloak.sms.models.credential.SmsChallenge;
 import com.inventage.keycloak.sms.models.credential.SmsCredentialModel;
@@ -12,11 +13,13 @@ import org.keycloak.authentication.AuthenticationFlowContext;
 import org.keycloak.authentication.AuthenticationFlowError;
 import org.keycloak.authentication.Authenticator;
 import org.keycloak.credential.CredentialModel;
+import org.keycloak.forms.login.LoginFormsProvider;
 import org.keycloak.models.*;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
 import java.io.IOException;
-import java.util.Objects;
+
+import com.inventage.keycloak.sms.Constants;
 
 import static com.inventage.keycloak.sms.Constants.INPUT_ID_CODE;
 import static com.inventage.keycloak.sms.Constants.SMS_CHALLENGE_TEMPLATE_NAME;
@@ -45,36 +48,36 @@ public class SmsAuthenticator implements Authenticator {
     @Override
     public void authenticate(AuthenticationFlowContext context) {
         try {
-            context.challenge(sendSmsChallengeAndAskUserForCode(context));
-        } catch (Exception e) {
+            final String mobileNumber = getMobileNumber(context.getUser());
+            final SmsCodeConfiguration smsCodeConfiguration = new SmsCodeConfiguration(context.getAuthenticatorConfig().getConfig());
+
+            final String smsSent = context.getAuthenticationSession().getAuthNote(SMS_SENT_NOTE);
+            String smsError = null;
+            if (smsSent == null) {
+                try {
+                    sendSmsChallenge(context.getUser(), mobileNumber, smsCodeConfiguration, context.getAuthenticationSession(), context.getSession());
+                }
+                catch (SmsRateLimitedException e) {
+                    LOGGER.warn("authenticate: SMS sending was rate limited", e);
+                    smsError = "smsAuthSmsRateLimited";
+                }
+                context.getAuthenticationSession().setAuthNote(SMS_SENT_NOTE, SMS_NOTE_VALUE);
+            }
+            final LoginFormsProvider form = context.form()
+                    .setAttribute(REALM_ATTRIBUTE, context.getRealm())
+                    .setAttribute(SHOW_PHONE_NUMBER_ATTRIBUTE, smsCodeConfiguration.getShowPhoneNumber(context.getAuthenticatorConfig()))
+                    .setAttribute(MOBILE_NUMBER_ATTRIBUTE, mobileNumber);
+            if (smsError != null) {
+                form.setError(smsError);
+            }
+            context.challenge(form.createForm(SMS_CHALLENGE_TEMPLATE_NAME));
+        }
+        catch (Exception e) {
             context.failureChallenge(
                     AuthenticationFlowError.INTERNAL_ERROR,
                     context.form().setError("smsAuthSmsNotSent", e.getMessage())
                             .createErrorPage(Response.Status.INTERNAL_SERVER_ERROR));
         }
-    }
-
-    private Response sendSmsChallengeAndAskUserForCode(AuthenticationFlowContext context) throws IOException {
-        final String mobileNumber = getMobileNumber(context.getUser());
-        final SmsCodeConfiguration smsCodeConfiguration = new SmsCodeConfiguration(context.getAuthenticatorConfig().getConfig());
-        sendSmsChallenge(context.getUser(), mobileNumber, smsCodeConfiguration, context.getAuthenticationSession(), context.getSession());
-
-        final String smsResent = context.getAuthenticationSession().getAuthNote(SMS_SENT_NOTE);
-        if (Objects.equals(smsResent, SMS_NOTE_VALUE)) {
-            return context.form()
-                    .setAttribute(REALM_ATTRIBUTE, context.getRealm())
-                    .setAttribute(SHOW_PHONE_NUMBER_ATTRIBUTE, smsCodeConfiguration.getShowPhoneNumber(context.getAuthenticatorConfig()))
-                    .setAttribute(MOBILE_NUMBER_ATTRIBUTE, mobileNumber)
-                    .setAttribute(SMS_RESENT_INFO_ATTRIBUTE, true)
-                    .createForm(SMS_CHALLENGE_TEMPLATE_NAME);
-        }
-
-        context.getAuthenticationSession().setAuthNote(SMS_SENT_NOTE, SMS_NOTE_VALUE);
-        return context.form()
-                .setAttribute(REALM_ATTRIBUTE, context.getRealm())
-                .setAttribute(SHOW_PHONE_NUMBER_ATTRIBUTE, smsCodeConfiguration.getShowPhoneNumber(context.getAuthenticatorConfig()))
-                .setAttribute(MOBILE_NUMBER_ATTRIBUTE, mobileNumber)
-                .createForm(SMS_CHALLENGE_TEMPLATE_NAME);
     }
 
     private void sendSmsChallenge(UserModel user, String mobileNumber, SmsCodeConfiguration smsCodeConfiguration, AuthenticationSessionModel authenticationSession, KeycloakSession session) throws IOException {
@@ -92,7 +95,38 @@ public class SmsAuthenticator implements Authenticator {
 
     @Override
     public void action(AuthenticationFlowContext context) {
-        String enteredCode = context.getHttpRequest().getDecodedFormParameters().getFirst(INPUT_ID_CODE);
+        final String resend = context.getHttpRequest().getDecodedFormParameters().getFirst(Constants.RESEND_SMS);
+        if (resend != null) {
+            final String mobileNumber = getMobileNumber(context.getUser());
+            final SmsCodeConfiguration smsCodeConfiguration = new SmsCodeConfiguration(context.getAuthenticatorConfig().getConfig());
+            try {
+                sendSmsChallenge(context.getUser(), mobileNumber, smsCodeConfiguration, context.getAuthenticationSession(), context.getSession());
+                context.challenge(context.form()
+                        .setAttribute(REALM_ATTRIBUTE, context.getRealm())
+                        .setAttribute(SHOW_PHONE_NUMBER_ATTRIBUTE, smsCodeConfiguration.getShowPhoneNumber(context.getAuthenticatorConfig()))
+                        .setAttribute(MOBILE_NUMBER_ATTRIBUTE, mobileNumber)
+                        .setAttribute(SMS_RESENT_INFO_ATTRIBUTE, true)
+                        .createForm(SMS_CHALLENGE_TEMPLATE_NAME));
+            }
+            catch (SmsRateLimitedException e) {
+                LOGGER.warn("action: SMS resend was rate limited", e);
+                context.challenge(context.form()
+                        .setAttribute(REALM_ATTRIBUTE, context.getRealm())
+                        .setAttribute(SHOW_PHONE_NUMBER_ATTRIBUTE, smsCodeConfiguration.getShowPhoneNumber(context.getAuthenticatorConfig()))
+                        .setAttribute(MOBILE_NUMBER_ATTRIBUTE, mobileNumber)
+                        .setError("smsAuthSmsRateLimited")
+                        .createForm(SMS_CHALLENGE_TEMPLATE_NAME));
+            }
+            catch (Exception e) {
+                context.failureChallenge(
+                        AuthenticationFlowError.INTERNAL_ERROR,
+                        context.form().setError("smsAuthSmsNotSent", e.getMessage())
+                                .createErrorPage(Response.Status.INTERNAL_SERVER_ERROR));
+            }
+            return;
+        }
+
+        final String enteredCode = context.getHttpRequest().getDecodedFormParameters().getFirst(INPUT_ID_CODE);
         validate(enteredCode, context);
     }
 

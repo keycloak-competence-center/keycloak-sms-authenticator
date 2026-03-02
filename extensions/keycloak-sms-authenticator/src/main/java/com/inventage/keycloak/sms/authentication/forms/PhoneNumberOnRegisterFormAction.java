@@ -1,5 +1,7 @@
 package com.inventage.keycloak.sms.authentication.forms;
 
+import com.inventage.keycloak.sms.authentication.PhoneNumberUtils;
+import com.inventage.keycloak.sms.authentication.SmsCodeConfiguration;
 import com.inventage.keycloak.sms.authentication.requireactions.SmsRequiredAction;
 import jakarta.ws.rs.core.MultivaluedMap;
 import org.keycloak.Config;
@@ -68,11 +70,17 @@ public class PhoneNumberOnRegisterFormAction implements FormAction, FormActionFa
 
         List<FormMessage> errors = new ArrayList<>();
 
-        if (Validation.isBlank(formData.getFirst(FIELD_PHONENUMBER))) {
+        final String phoneNumber = PhoneNumberUtils.clean(formData.getFirst(FIELD_PHONENUMBER));
+
+        if (Validation.isBlank(phoneNumber)) {
             errors.add(new FormMessage(FIELD_PHONENUMBER, "sms.phoneNumber.error.empty"));
         }
-
-        //TODO add more validations for phonenumber?
+        else {
+            final String regex = getPhoneNumberValidationRegex(context);
+            if (regex != null && !regex.isEmpty() && !phoneNumber.matches(regex)) {
+                errors.add(new FormMessage(FIELD_PHONENUMBER, "sms.phoneNumber.error.invalidFormat"));
+            }
+        }
 
         if (errors.isEmpty()){
             context.success();
@@ -87,7 +95,7 @@ public class PhoneNumberOnRegisterFormAction implements FormAction, FormActionFa
     public void success(FormContext context) {
         MultivaluedMap<String, String> formData = context.getHttpRequest().getDecodedFormParameters();
 
-        String enteredNumber = formData.getFirst(FIELD_PHONENUMBER);
+        final String enteredNumber = PhoneNumberUtils.clean(formData.getFirst(FIELD_PHONENUMBER));
 
         context.getAuthenticationSession().setAuthNote(SmsRequiredAction.ENTERED_NUMBER_KEY, enteredNumber);
         context.getAuthenticationSession().addRequiredAction(SmsRequiredAction.PROVIDER_ID);
@@ -106,6 +114,14 @@ public class PhoneNumberOnRegisterFormAction implements FormAction, FormActionFa
     @Override
     public void setRequiredActions(KeycloakSession session, RealmModel realm, UserModel user) {
         //NOP
+    }
+
+    private String getPhoneNumberValidationRegex(ValidationContext context) {
+        final RequiredActionProviderModel requiredAction = context.getRealm().getRequiredActionProviderByAlias(SmsRequiredAction.PROVIDER_ID);
+        if (requiredAction != null && requiredAction.getConfig() != null) {
+            return requiredAction.getConfig().get(SmsCodeConfiguration.SMS_PHONE_NUMBER_VALIDATION_REGEX_CONFIG);
+        }
+        return "";
     }
 
     @Override

@@ -3,6 +3,12 @@
     <#if section = "header">
         ${msg("smsAuthTitle",realm.displayName)}
     <#elseif section = "form">
+        <#if smsResent?? && smsResent>
+            <div class="alert alert-info">
+                <span class="pficon pficon-info"></span>
+                <span>${msg("smsAuthCodeResent")}</span>
+            </div>
+        </#if>
         <form id="kc-sms-code-login-form" class="${properties.kcFormClass!}" action="${url.loginAction}" method="post">
             <div class="${properties.kcFormGroupClass!}">
                 <div class="${properties.kcLabelWrapperClass!}">
@@ -25,10 +31,13 @@
                 <div id="kc-form-buttons" class="${properties.kcFormButtonsClass!}">
                     <input class="${properties.kcButtonClass!} ${properties.kcButtonPrimaryClass!} ${properties.kcButtonBlockClass!} ${properties.kcButtonLargeClass!}" type="submit" value="${msg("doSubmit")}"/>
                 </div>
+                <div class="${properties.kcFormButtonsClass!}" style="margin-top: 0.5rem;">
+                    <button class="${properties.kcButtonClass!} ${properties.kcButtonDefaultClass!} ${properties.kcButtonBlockClass!} ${properties.kcButtonLargeClass!}" type="submit" name="resend-sms" value="true">${msg("doResend")}</button>
+                </div>
             </div>
         </form>
     <#elseif section = "info" >
-        <#if showPhoneNumber >
+        <#if showPhoneNumber?? && showPhoneNumber>
             ${msg("smsAuthInstructionWithNumber", mobileNumber)}
         <#else>
             ${msg("smsAuthInstruction")}

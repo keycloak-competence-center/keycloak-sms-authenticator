@@ -1,6 +1,7 @@
 {
   "id": "myrealm",
   "realm": "myrealm",
+  "sslRequired": "$(env:REALM_MYREALM_SSL_REQUIRED:-external)",
   "enabled": true,
   "registrationAllowed": true,
   "adminEventsEnabled": true,
@@ -16,7 +17,7 @@
       "description": "",
       "rootUrl": "",
       "adminUrl": "",
-      "baseUrl": "https://www.keycloak.org/app/#url=http://localhost:8080&realm=myrealm&client=myclient",
+      "baseUrl": "https://www.keycloak.org/app?url=http://localhost:8080&realm=myrealm&client=myclient",
       "surrogateAuthRequired": false,
       "enabled": true,
       "alwaysDisplayInConsole": false,
@@ -140,7 +141,10 @@
         "sms-service-provider-id": "sms-to-console",
         "sms-code-ttl": "60",
         "sms-code-length": "4",
-        "sms-show-phone-number": true
+        "sms-code-characters": "$(env:SMS_CODE_CHARACTERS:-)",
+        "sms-show-phone-number": true,
+        "sms-phone-number-validation-regex": "^\\+417[5-9]\\d{7}$",
+        "sms-phone-number-validation-hint": "+41 7x xxx xx xx"
       }
     }
   ],
@@ -156,7 +160,10 @@
         "sms-service-provider-id": "sms-to-console",
         "sms-code-ttl": "60",
         "sms-code-length": "5",
-        "sms-show-phone-number": true
+        "sms-code-characters": "$(env:SMS_CODE_CHARACTERS:-)",
+        "sms-show-phone-number": true,
+        "sms-phone-number-validation-regex": "^\\+417[5-9]\\d{7}$",
+        "sms-phone-number-validation-hint": "+41 7x xxx xx xx"
       }
     }
   ],

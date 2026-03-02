@@ -53,7 +53,7 @@ jobs:
         run: mvn -B install -Dbuild.number=${{github.run_number}} -Dbuild.revision=${ACTUAL_SHA} --file pom.xml
 
       - name: Deploy with Maven
-        run: mvn -B deploy -Dbuild.number=${{github.run_number}} -Dbuild.revision=${ACTUAL_SHA} -DskipTests --file extensions/keycloak-sms-authenticator/.flattened-pom.xml
+        run: mvn -B deploy -Dbuild.number=${{github.run_number}} -Dbuild.revision=${ACTUAL_SHA} -DskipTests -DaltDeploymentRepository=kcc-maven-staging::https://nexus3.inventage.com/repository/kcc-maven-staging/ --file extensions/keycloak-sms-authenticator/.flattened-pom.xml
         env:
           KCC_CI_USERNAME: ${{secrets.KCC_CI_USERNAME}}
           KCC_CI_PASSWORD: ${{secrets.KCC_CI_PASSWORD}}

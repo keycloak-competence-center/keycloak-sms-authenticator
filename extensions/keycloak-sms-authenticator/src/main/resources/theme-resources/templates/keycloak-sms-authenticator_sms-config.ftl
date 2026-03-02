@@ -12,7 +12,7 @@
             <form id="kc-sms-login-form" class="${properties.kcFormClass!} kc-grid-column-two-thirds" action="${url.loginAction}" method="post">
                 <div class="kc-form-group ${errorClass!""}">
                     <label for="phone-number" class="kc-label">${msg("sms.phoneNumber")}</label>
-                    <input type="text" id="phone-number" class="kc-input" name="phone-number" autocomplete="false" />
+                    <input type="tel" id="phone-number" class="kc-input" name="phone-number" autocomplete="false"<#if phoneNumberHint??> placeholder="${phoneNumberHint}"</#if> />
                     <input class="kc-button" type="submit" value="${msg("doSubmit")}"/>
                 </div>
             </form>
