@@ -11,4 +11,6 @@ public class Constants {
     // Parameter in HTTP response used in login-sms.ftl, SmsRequiredAction.java and SmsAuthenticator.java
     public static final String INPUT_ID_CODE = "code";
 
+    public static final String RESEND_SMS = "resend-sms";
+
 }

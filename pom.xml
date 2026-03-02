@@ -16,20 +16,20 @@
     <licenses>
         <license>
             <name>The Apache License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
         </license>
     </licenses>
 
     <developers>
         <developer>
-            <name>Edwin Steiner</name>
-            <email>edwin.steiner@inventage.com</email>
+            <name>David Bidjan</name>
+            <email>david.bidjan@inventage.com</email>
             <organization>Inventage AG</organization>
             <organizationUrl>https://inventage.com/</organizationUrl>
         </developer>
         <developer>
-            <name>David Bidjan</name>
-            <email>david.bidjan@inventage.com</email>
+            <name>Geraldine von Roten</name>
+            <email>geraldine.vonroten@inventage.com</email>
             <organization>Inventage AG</organization>
             <organizationUrl>https://inventage.com/</organizationUrl>
         </developer>
@@ -39,11 +39,17 @@
             <organization>Inventage AG</organization>
             <organizationUrl>https://inventage.com/</organizationUrl>
         </developer>
+        <developer>
+            <name>Edwin Steiner</name>
+            <email>edwin.steiner@inventage.com</email>
+            <organization>Inventage AG</organization>
+            <organizationUrl>https://inventage.com/</organizationUrl>
+        </developer>
     </developers>
 
     <scm>
-        <connection>scm:git:git://github.com/keycloak-competence-center/keycloak-sms-authenticator.git</connection>
-        <developerConnection>scm:git:ssh://github.com/keycloak-competence-center/keycloak-sms-authenticator.git</developerConnection>
+        <connection>scm:git:https://github.com/keycloak-competence-center/keycloak-sms-authenticator.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/keycloak-competence-center/keycloak-sms-authenticator.git</developerConnection>
         <url>https://github.com/keycloak-competence-center/keycloak-sms-authenticator/tree/main</url>
     </scm>
 
@@ -356,7 +362,7 @@
                     <version>1.7.3</version>
 
                     <configuration>
-                        <flattenMode>bom</flattenMode>
+                        <flattenMode>ossrh</flattenMode>
                         <flattenDependencyMode>all</flattenDependencyMode>
                     </configuration>
 

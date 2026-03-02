@@ -81,12 +81,18 @@ jobs:
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor }}@users.noreply.github.com"
 
+      - name: Setup Java
+        uses: ./.github/actions/setup-java
+
       - name: Bump version
         run: mvn versions:set -DnewVersion=${{ steps.setup.outputs.NEXT_VERSION }}-${{ env.SNAPSHOT_SUFFIX }}
 
+      - name: Update Helm chart version
+        run: mvn process-resources -pl helm
+
       - name: Commit
         run: |
-          git add $(find . -name 'pom.xml')
+          git add $(find . -name 'pom.xml') helm/src/generated/
 
           # only commit if there are changes
           git diff-index --quiet HEAD || git commit \

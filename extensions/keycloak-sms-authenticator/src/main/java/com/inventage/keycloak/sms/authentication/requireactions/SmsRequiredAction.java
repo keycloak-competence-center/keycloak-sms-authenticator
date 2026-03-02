@@ -1,8 +1,11 @@
 package com.inventage.keycloak.sms.authentication.requireactions;
 
+import com.inventage.keycloak.sms.Constants;
+import com.inventage.keycloak.sms.authentication.PhoneNumberUtils;
 import com.inventage.keycloak.sms.authentication.SmsCodeConfiguration;
 import com.inventage.keycloak.sms.credential.SmsCredentialProvider;
 import com.inventage.keycloak.sms.credential.SmsCredentialProviderFactory;
+import com.inventage.keycloak.sms.gateway.SmsRateLimitedException;
 import com.inventage.keycloak.sms.gateway.SmsServiceProvider;
 import com.inventage.keycloak.sms.models.credential.SmsChallenge;
 import com.inventage.keycloak.sms.models.credential.SmsCredentialModel;
@@ -68,29 +71,32 @@ public class SmsRequiredAction implements RequiredActionProvider, CredentialRegi
     public void requiredActionChallenge(RequiredActionContext context) {
         this.context = context;
 
-        String enteredNumber = context.getAuthenticationSession().getAuthNote(ENTERED_NUMBER_KEY);
+        final String enteredNumber = context.getAuthenticationSession().getAuthNote(ENTERED_NUMBER_KEY);
 
         if (enteredNumber == null) {
             setState(State.ENTERING_NUMBER);
             showEnterNumberScreen();
         }
         else {
-            try {
-                final SmsCodeConfiguration smsCodeConfiguration = new SmsCodeConfiguration(context.getConfig().getConfig());
-                final SmsServiceProvider smsServiceProvider = context.getSession().getProvider(SmsServiceProvider.class, smsCodeConfiguration.getSmsServiceProviderId());
-                if (smsServiceProvider == null) {
-                    LOGGER.warnf("requiredActionChallenge: SMS couldn't be send, because SmsServiceProvider '%s' not found!", smsCodeConfiguration.getSmsServiceProviderId());
-                }
-
-                String code = new SmsChallenge(context.getAuthenticationSession()).code(smsCodeConfiguration);
-                String smsText = smsTextService.getSmsText(code, smsCodeConfiguration.getSmsCodeTtl(), context.getSession().getContext().resolveLocale(context.getUser()));
-                smsServiceProvider.getSmsService().send(enteredNumber, smsText);
-                // AuthenticationSMSUtil.from(context).sendSms(enteredNumber);
-                setState(State.CHALLENGE);
+            final State state = getStateOrDefault();
+            if (State.CHALLENGE.equals(state)) {
                 showChallengeScreen();
-            } catch (IOException e) {
-                LOGGER.error("error while sending sms", e);
-                showEnterNumberScreen(Optional.of("sms.phoneNumber.error.sending"));
+            }
+            else {
+                try {
+                    sendSmsChallenge(enteredNumber, context.getConfig().getConfig(), context.getSession());
+                    setState(State.CHALLENGE);
+                    showChallengeScreen();
+                }
+                catch (SmsRateLimitedException e) {
+                    LOGGER.warn("requiredActionChallenge: SMS sending was rate limited", e);
+                    setState(State.CHALLENGE);
+                    showChallengeScreen(Optional.of("smsAuthSmsRateLimited"));
+                }
+                catch (Exception e) {
+                    LOGGER.error("error while sending sms", e);
+                    showEnterNumberScreen(Optional.of("sms.phoneNumber.error.sending"));
+                }
             }
         }
     }
@@ -112,21 +118,41 @@ public class SmsRequiredAction implements RequiredActionProvider, CredentialRegi
         this.context = context;
         if (isResetPhoneNumber()) {
             setState(State.ENTERING_NUMBER);
+            context.getAuthenticationSession().removeAuthNote(ENTERED_NUMBER_KEY);
             showEnterNumberScreen();
         }
-        else {
-                State state = getState();
-                if (State.ENTERING_NUMBER.equals(state)) {
-                    enteredNumber();
-                } else if (State.CHALLENGE.equals(state)) {
-                    challenge();
-                }
+        else if (isResendSms()) {
+            try {
+                final String enteredNumber = context.getAuthenticationSession().getAuthNote(ENTERED_NUMBER_KEY);
+                sendSmsChallenge(enteredNumber, context.getConfig().getConfig(), context.getSession());
+                showChallengeScreen(Optional.empty(), true);
             }
+            catch (SmsRateLimitedException e) {
+                LOGGER.warn("processAction: SMS resend was rate limited", e);
+                showChallengeScreen(Optional.of("smsAuthSmsRateLimited"));
+            }
+            catch (Exception e) {
+                LOGGER.error("error while resending sms", e);
+                showChallengeScreen(Optional.of("smsAuthSmsNotSent"));
+            }
+        }
+        else {
+            final State state = getState();
+            if (State.ENTERING_NUMBER.equals(state)) {
+                enteredNumber();
+            } else if (State.CHALLENGE.equals(state)) {
+                challenge();
+            }
+        }
     }
 
     private boolean isResetPhoneNumber() {
         MultivaluedMap<String, String> queryParameters = context.getSession().getContext().getUri().getQueryParameters();
         return queryParameters.containsKey(RESET_NUMBER_QUERY_KEY);
+    }
+
+    private boolean isResendSms() {
+        return context.getHttpRequest().getDecodedFormParameters().getFirst(Constants.RESEND_SMS) != null;
     }
 
     private void challenge() {
@@ -148,6 +174,7 @@ public class SmsRequiredAction implements RequiredActionProvider, CredentialRegi
 
     private void enteredNumber() {
         String phoneNumber = context.getHttpRequest().getDecodedFormParameters().getFirst("phone-number");
+        phoneNumber = PhoneNumberUtils.clean(phoneNumber);
 
         Optional<String> error = validatePhoneNumber(phoneNumber);
         if (error.isPresent()) {
@@ -160,7 +187,13 @@ public class SmsRequiredAction implements RequiredActionProvider, CredentialRegi
                 context.getAuthenticationSession().setAuthNote(ENTERED_NUMBER_KEY, phoneNumber);
                 showChallengeScreen();
             }
-            catch (IOException e) {
+            catch (SmsRateLimitedException e) {
+                LOGGER.warn("enteredNumber: SMS sending was rate limited", e);
+                setState(State.CHALLENGE);
+                context.getAuthenticationSession().setAuthNote(ENTERED_NUMBER_KEY, phoneNumber);
+                showChallengeScreen(Optional.of("smsAuthSmsRateLimited"));
+            }
+            catch (Exception e) {
                 LOGGER.error("error while sending sms", e);
                 showEnterNumberScreen(Optional.of("sms.phoneNumber.error.sending"));
             }
@@ -172,24 +205,35 @@ public class SmsRequiredAction implements RequiredActionProvider, CredentialRegi
     }
 
     private void showEnterNumberScreen(Optional<String> error) {
-        LoginFormsProvider form = context.form();
+        final LoginFormsProvider form = context.form();
         if (error.isPresent()) {
             form.setError(error.get());
         }
-        Response challenge = form.createForm(ENTER_NUMBER_TEMPLATE_NAME);
+        final SmsCodeConfiguration smsCodeConfiguration = new SmsCodeConfiguration(context.getConfig().getConfig());
+        final String hint = smsCodeConfiguration.getPhoneNumberValidationHint();
+        if (hint != null && !hint.isEmpty()) {
+            form.setAttribute("phoneNumberHint", hint);
+        }
+        final Response challenge = form.createForm(ENTER_NUMBER_TEMPLATE_NAME);
         context.challenge(challenge);
     }
 
     private void showChallengeScreen() {
-        showChallengeScreen(Optional.empty());
+        showChallengeScreen(Optional.empty(), false);
     }
 
     private void showChallengeScreen(Optional<String> error) {
-        LoginFormsProvider form = context.form();
+        showChallengeScreen(error, false);
+    }
+
+    private void showChallengeScreen(Optional<String> error, boolean smsResent) {
+        final LoginFormsProvider form = context.form();
         if (error.isPresent()) {
             form.setError(error.get());
-            // TODO: means error always invalid code?
             form.setAttribute(SMS_AUTH_CODE_INVALID, true);
+        }
+        if (smsResent) {
+            form.setAttribute("smsResent", true);
         }
 
         addResetPhoneNumberActionUrl(form);
@@ -197,7 +241,7 @@ public class SmsRequiredAction implements RequiredActionProvider, CredentialRegi
         final SmsCodeConfiguration smsCodeConfiguration = new SmsCodeConfiguration(context.getConfig().getConfig());
         form.setAttribute("showPhoneNumber", smsCodeConfiguration.getShowPhoneNumber(context.getRealm().getAuthenticatorConfigByAlias(PROVIDER_ID)));
         form.setAttribute("mobileNumber", mobileNumber);
-        Response challenge = form.createForm(SMS_CHALLENGE_TEMPLATE_NAME);
+        final Response challenge = form.createForm(SMS_CHALLENGE_TEMPLATE_NAME);
         context.challenge(challenge);
     }
 
@@ -210,6 +254,12 @@ public class SmsRequiredAction implements RequiredActionProvider, CredentialRegi
     private Optional<String> validatePhoneNumber(String phoneNumber) {
         if (phoneNumber == null || phoneNumber.isBlank()) {
             return Optional.of("sms.phoneNumber.error.empty");
+        }
+
+        final SmsCodeConfiguration smsCodeConfiguration = new SmsCodeConfiguration(context.getConfig().getConfig());
+        final String regex = smsCodeConfiguration.getPhoneNumberValidationRegex();
+        if (regex != null && !regex.isEmpty() && !phoneNumber.matches(regex)) {
+            return Optional.of("sms.phoneNumber.error.invalidFormat");
         }
 
         return Optional.empty();
@@ -231,6 +281,14 @@ public class SmsRequiredAction implements RequiredActionProvider, CredentialRegi
 
     private State getState() {
         return State.valueOf(context.getAuthenticationSession().getAuthNote(STATE_KEY));
+    }
+
+    private State getStateOrDefault() {
+        final String stateNote = context.getAuthenticationSession().getAuthNote(STATE_KEY);
+        if (stateNote == null) {
+            return State.ENTERING_NUMBER;
+        }
+        return State.valueOf(stateNote);
     }
 
     private void setState(State state) {

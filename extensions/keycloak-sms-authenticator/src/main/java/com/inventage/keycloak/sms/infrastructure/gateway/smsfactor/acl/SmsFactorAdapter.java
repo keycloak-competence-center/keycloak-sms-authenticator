@@ -2,6 +2,7 @@ package com.inventage.keycloak.sms.infrastructure.gateway.smsfactor.acl;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.inventage.keycloak.sms.gateway.SmsRateLimitedException;
 import com.inventage.keycloak.sms.gateway.SmsService;
 import org.apache.http.HttpResponse;
 import org.jboss.logging.Logger;
@@ -42,8 +43,16 @@ public class SmsFactorAdapter implements SmsService {
     }
 
     private void processResponse(HttpResponse response) {
+        final int httpStatus = response.getStatusLine().getStatusCode();
+        if (httpStatus == 429) {
+            throw new SmsRateLimitedException("SMS gateway rate limit exceeded (HTTP 429)");
+        }
+        if (httpStatus < 200 || httpStatus >= 300) {
+            throw new RuntimeException("SMS gateway returned HTTP " + httpStatus);
+        }
+
         try {
-            final ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);;
+            final ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
             final SmsFactorSendResponse smsFactorSendResponse = objectMapper.readValue(response.getEntity().getContent(), SmsFactorSendResponse.class);
 
             if (smsFactorSendResponse.status() != 1) {
@@ -52,7 +61,8 @@ public class SmsFactorAdapter implements SmsService {
             }
 
             LOGGER.debugf("processResponse: SMS send request was successful with status '%d'", smsFactorSendResponse.status());
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             throw new RuntimeException(e);
         }
     }

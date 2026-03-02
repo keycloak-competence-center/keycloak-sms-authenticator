@@ -12,7 +12,14 @@
 
     <artifactId>keycloak-sms-authenticator</artifactId>
     <name>SMS Authenticator extension for Keycloak</name>
+    <description>A Keycloak extension enabling SMS-based two-factor authentication (2FA) by sending a code to the user's mobile phone for verification.</description>
     <url>https://github.com/keycloak-competence-center/keycloak-sms-authenticator</url>
+
+    <scm>
+        <connection>scm:git:https://github.com/keycloak-competence-center/keycloak-sms-authenticator.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/keycloak-competence-center/keycloak-sms-authenticator.git</developerConnection>
+        <url>https://github.com/keycloak-competence-center/keycloak-sms-authenticator/tree/main</url>
+    </scm>
 
     <properties>
         <central.autoPublish>true</central.autoPublish>
