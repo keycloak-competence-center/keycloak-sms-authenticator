@@ -58,7 +58,7 @@ The SMS code entry template (`keycloak-sms-authenticator_login-sms.ftl`) receive
 | `smsResent` | Set to `true` after a successful resend, to display a confirmation message |
 | `resetPhoneNumberUri` | URL to reset the phone number (only present in the required action flow) |
 
-Errors (expired code, invalid code, rate limited) are set as global messages.
+Code validation errors (empty, invalid) are provided as per-field errors via `messagesPerField` for the field `code`, enabling inline error display and `aria-invalid` support. System-level errors (e.g. expired code, rate limited, SMS sending failure) are set as global messages.
 
 ### SMS Resend Behavior
 

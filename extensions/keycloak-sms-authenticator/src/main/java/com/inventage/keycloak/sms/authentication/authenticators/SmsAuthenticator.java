@@ -15,6 +15,7 @@ import org.keycloak.authentication.Authenticator;
 import org.keycloak.credential.CredentialModel;
 import org.keycloak.forms.login.LoginFormsProvider;
 import org.keycloak.models.*;
+import org.keycloak.models.utils.FormMessage;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
 import java.io.IOException;
@@ -152,8 +153,7 @@ public class SmsAuthenticator implements Authenticator {
                                 .setAttribute(REALM_ATTRIBUTE, context.getRealm())
                                 .setAttribute(SHOW_PHONE_NUMBER_ATTRIBUTE, smsCodeConfiguration.getShowPhoneNumber(context.getAuthenticatorConfig()))
                                 .setAttribute(MOBILE_NUMBER_ATTRIBUTE, mobileNumber)
-                                .setError(SMS_AUTH_CODE_INVALID)
-                                .setAttribute(SMS_AUTH_CODE_INVALID, true)
+                                .addError(new FormMessage(INPUT_ID_CODE, SMS_AUTH_CODE_INVALID))
                                 .createForm(SMS_CHALLENGE_TEMPLATE_NAME));
             } else if (execution.isConditional() || execution.isAlternative()) {
                 context.attempted();
