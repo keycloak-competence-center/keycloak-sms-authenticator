@@ -34,6 +34,32 @@ Phone numbers are normalized before validation and storage:
 
 The validation regex is matched against the cleaned number, so it should be written accordingly (e.g. expect `+41...` rather than `0041...`).
 
+### Phone Number Entry Screen
+
+The phone number entry template (`keycloak-sms-authenticator_sms-config.ftl`) receives the following attributes:
+
+| Attribute | Description |
+|-----------|-------------|
+| `username` | The authenticated user's username, for personalized greetings |
+| `phoneNumber` | The previously entered phone number, for repopulating the input on validation error |
+| `phoneNumberHint` | The configured validation hint, for use as input placeholder |
+
+Phone number validation errors (empty, invalid format) are provided as per-field errors via `messagesPerField` for the field `phone-number`, enabling inline error display and `aria-invalid` support. System-level errors (e.g. SMS sending failure) are set as global messages.
+
+### SMS Code Entry Screen
+
+The SMS code entry template (`keycloak-sms-authenticator_login-sms.ftl`) receives the following attributes:
+
+| Attribute | Description |
+|-----------|-------------|
+| `realm` | The realm model, used for display name in the title |
+| `showPhoneNumber` | Whether to display the phone number (from `sms-show-phone-number` config) |
+| `mobileNumber` | The user's phone number, shown when `showPhoneNumber` is true |
+| `smsResent` | Set to `true` after a successful resend, to display a confirmation message |
+| `resetPhoneNumberUri` | URL to reset the phone number (only present in the required action flow) |
+
+Errors (expired code, invalid code, rate limited) are set as global messages.
+
 ### SMS Resend Behavior
 
 - On first visit, the SMS is sent automatically

@@ -21,6 +21,7 @@ import org.keycloak.authentication.RequiredActionProvider;
 import org.keycloak.credential.CredentialModel;
 import org.keycloak.credential.CredentialProvider;
 import org.keycloak.forms.login.LoginFormsProvider;
+import org.keycloak.models.utils.FormMessage;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.UserModel;
 import org.keycloak.sessions.AuthenticationSessionModel;
@@ -95,7 +96,7 @@ public class SmsRequiredAction implements RequiredActionProvider, CredentialRegi
                 }
                 catch (Exception e) {
                     LOGGER.error("error while sending sms", e);
-                    showEnterNumberScreen(Optional.of("sms.phoneNumber.error.sending"));
+                    showEnterNumberScreenWithGlobalError("sms.phoneNumber.error.sending", enteredNumber);
                 }
             }
         }
@@ -178,7 +179,7 @@ public class SmsRequiredAction implements RequiredActionProvider, CredentialRegi
 
         Optional<String> error = validatePhoneNumber(phoneNumber);
         if (error.isPresent()) {
-            showEnterNumberScreen(error);
+            showEnterNumberScreenWithFieldError(error.get(), phoneNumber);
         }
         else {
             try {
@@ -195,19 +196,34 @@ public class SmsRequiredAction implements RequiredActionProvider, CredentialRegi
             }
             catch (Exception e) {
                 LOGGER.error("error while sending sms", e);
-                showEnterNumberScreen(Optional.of("sms.phoneNumber.error.sending"));
+                showEnterNumberScreenWithGlobalError("sms.phoneNumber.error.sending", phoneNumber);
             }
         }
     }
 
     private void showEnterNumberScreen() {
-        showEnterNumberScreen(Optional.empty());
+        buildEnterNumberForm(null, null, null);
     }
 
-    private void showEnterNumberScreen(Optional<String> error) {
+    private void showEnterNumberScreenWithFieldError(String fieldError, String phoneNumber) {
+        buildEnterNumberForm(fieldError, null, phoneNumber);
+    }
+
+    private void showEnterNumberScreenWithGlobalError(String globalError, String phoneNumber) {
+        buildEnterNumberForm(null, globalError, phoneNumber);
+    }
+
+    private void buildEnterNumberForm(String fieldError, String globalError, String phoneNumber) {
         final LoginFormsProvider form = context.form();
-        if (error.isPresent()) {
-            form.setError(error.get());
+        if (fieldError != null) {
+            form.addError(new FormMessage("phone-number", fieldError));
+        }
+        if (globalError != null) {
+            form.setError(globalError);
+        }
+        form.setAttribute("username", context.getUser().getUsername());
+        if (phoneNumber != null) {
+            form.setAttribute("phoneNumber", phoneNumber);
         }
         final SmsCodeConfiguration smsCodeConfiguration = new SmsCodeConfiguration(context.getConfig().getConfig());
         final String hint = smsCodeConfiguration.getPhoneNumberValidationHint();
