@@ -1,5 +1,5 @@
 <#import "template.ftl" as layout>
-<@layout.registrationLayout displayInfo=true; section>
+<@layout.registrationLayout displayMessage=!messagesPerField.existsError('code') displayInfo=true; section>
     <#if section = "header">
         ${msg("smsAuthTitle",realm.displayName)}
     <#elseif section = "form">
@@ -15,7 +15,15 @@
                     <label for="code" class="${properties.kcLabelClass!}">${msg("smsAuthLabel")}</label>
                 </div>
                 <div class="${properties.kcInputWrapperClass!}">
-                    <input type="text" id="code" name="code" class="${properties.kcInputClass!}" autofocus/>
+                    <input type="text" id="code" name="code" class="${properties.kcInputClass!}" autofocus
+                           aria-invalid="<#if messagesPerField.existsError('code')>true</#if>"
+                    />
+
+                    <#if messagesPerField.existsError('code')>
+                        <span id="input-error-code" class="${properties.kcInputErrorMessageClass!}" aria-live="polite">
+                            ${kcSanitize(messagesPerField.get('code'))?no_esc}
+                        </span>
+                    </#if>
                 </div>
             </div>
             <div class="${properties.kcFormGroupClass!} ${properties.kcFormSettingClass!}">

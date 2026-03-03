@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.inventage.keycloak.sms.Constants.*;
-import static com.inventage.keycloak.sms.authentication.authenticators.SmsAuthenticator.SMS_AUTH_CODE_INVALID;
+
 
 
 public class SmsRequiredAction implements RequiredActionProvider, CredentialRegistrator {
@@ -160,8 +160,7 @@ public class SmsRequiredAction implements RequiredActionProvider, CredentialRegi
         String code = context.getHttpRequest().getDecodedFormParameters().getFirst(INPUT_ID_CODE);
         Optional<String> error = validateCode(code);
         if (error.isPresent()) {
-            showChallengeScreen(error);
-            //TODO send code again???
+            showChallengeScreenWithFieldError(error.get());
         }
         else {
             SmsCredentialProvider credentialProvider =
@@ -235,18 +234,28 @@ public class SmsRequiredAction implements RequiredActionProvider, CredentialRegi
     }
 
     private void showChallengeScreen() {
-        showChallengeScreen(Optional.empty(), false);
+        buildChallengeForm(null, null, false);
     }
 
-    private void showChallengeScreen(Optional<String> error) {
-        showChallengeScreen(error, false);
+    private void showChallengeScreen(Optional<String> globalError) {
+        buildChallengeForm(null, globalError.orElse(null), false);
     }
 
-    private void showChallengeScreen(Optional<String> error, boolean smsResent) {
+    private void showChallengeScreen(Optional<String> globalError, boolean smsResent) {
+        buildChallengeForm(null, globalError.orElse(null), smsResent);
+    }
+
+    private void showChallengeScreenWithFieldError(String fieldError) {
+        buildChallengeForm(fieldError, null, false);
+    }
+
+    private void buildChallengeForm(String fieldError, String globalError, boolean smsResent) {
         final LoginFormsProvider form = context.form();
-        if (error.isPresent()) {
-            form.setError(error.get());
-            form.setAttribute(SMS_AUTH_CODE_INVALID, true);
+        if (fieldError != null) {
+            form.addError(new FormMessage(INPUT_ID_CODE, fieldError));
+        }
+        if (globalError != null) {
+            form.setError(globalError);
         }
         if (smsResent) {
             form.setAttribute("smsResent", true);
