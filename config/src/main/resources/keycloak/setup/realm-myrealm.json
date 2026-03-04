@@ -74,7 +74,56 @@
     }
   ],
   "browserFlow": "browser-sms",
+  "registrationFlow": "registration-sms",
   "authenticationFlows": [
+    {
+      "alias": "registration-sms",
+      "description": "Registration flow with SMS phone number setup after registration.",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "registration-page-form",
+          "authenticatorFlow": true,
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "flowAlias": "registration-sms form",
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "sms-authenticator",
+          "authenticatorConfig": "sms-authenticator",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "registration-sms form",
+      "description": "Registration form.",
+      "providerId": "form-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "registration-user-creation",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "registration-password-action",
+          "authenticatorFlow": false,
+          "requirement": "REQUIRED",
+          "priority": 50,
+          "userSetupAllowed": false
+        }
+      ]
+    },
     {
       "alias": "browser-sms",
       "description": "browser based authentication with sms 2fa",
