@@ -3,8 +3,8 @@ package sut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.Network;
-import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -46,7 +46,7 @@ public class SystemUnderTest {
     }
 
     private PostgreSQLContainer startPostgres(Network network) {
-        postgres = new PostgreSQLContainer<>(DOCKER_IMAGE_NAME_POSTGRES)
+        postgres = new PostgreSQLContainer(DOCKER_IMAGE_NAME_POSTGRES)
                 .withLogConsumer(new Slf4jLogConsumer(LOGGER))
                 .withNetwork(network)
                 .withNetworkAliases(NETWORK_ALIAS_POSTGRES)
