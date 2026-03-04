@@ -1,13 +1,11 @@
 package com.inventage.keycloak.sms.authentication.requireactions;
 
-import com.inventage.keycloak.sms.Constants;
 import com.inventage.keycloak.sms.authentication.PhoneNumberUtils;
+import com.inventage.keycloak.sms.authentication.SmsChallengeHelper;
 import com.inventage.keycloak.sms.authentication.SmsCodeConfiguration;
 import com.inventage.keycloak.sms.credential.SmsCredentialProvider;
 import com.inventage.keycloak.sms.credential.SmsCredentialProviderFactory;
 import com.inventage.keycloak.sms.gateway.SmsRateLimitedException;
-import com.inventage.keycloak.sms.gateway.SmsServiceProvider;
-import com.inventage.keycloak.sms.models.credential.SmsChallenge;
 import com.inventage.keycloak.sms.models.credential.SmsCredentialModel;
 import com.inventage.keycloak.sms.theme.SmsTextService;
 import jakarta.ws.rs.core.MultivaluedMap;
@@ -18,17 +16,13 @@ import org.keycloak.authentication.CredentialRegistrator;
 import org.keycloak.authentication.InitiatedActionSupport;
 import org.keycloak.authentication.RequiredActionContext;
 import org.keycloak.authentication.RequiredActionProvider;
-import org.keycloak.credential.CredentialModel;
 import org.keycloak.credential.CredentialProvider;
 import org.keycloak.forms.login.LoginFormsProvider;
 import org.keycloak.models.utils.FormMessage;
 import org.keycloak.models.KeycloakSession;
-import org.keycloak.models.UserModel;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
-import java.io.IOException;
 import java.net.URI;
-import java.util.Map;
 import java.util.Optional;
 
 import static com.inventage.keycloak.sms.Constants.*;
@@ -85,7 +79,8 @@ public class SmsRequiredAction implements RequiredActionProvider, CredentialRegi
             }
             else {
                 try {
-                    sendSmsChallenge(enteredNumber, context.getConfig().getConfig(), context.getSession());
+                    final SmsCodeConfiguration smsCodeConfiguration = new SmsCodeConfiguration(context.getConfig().getConfig());
+                    SmsChallengeHelper.sendSmsChallenge(enteredNumber, smsCodeConfiguration, context.getAuthenticationSession(), context.getSession(), context.getUser(), smsTextService);
                     setState(State.CHALLENGE);
                     showChallengeScreen();
                 }
@@ -102,18 +97,6 @@ public class SmsRequiredAction implements RequiredActionProvider, CredentialRegi
         }
     }
 
-    private void sendSmsChallenge(String mobileNumber, Map<String, String> config, KeycloakSession session) throws IOException {
-        final SmsCodeConfiguration smsCodeConfiguration = new SmsCodeConfiguration(config);
-        final SmsServiceProvider smsServiceProvider = session.getProvider(SmsServiceProvider.class, smsCodeConfiguration.getSmsServiceProviderId());
-        if (smsServiceProvider == null) {
-            LOGGER.warnf("sendSmsChallenge: SMS couldn't be send, because SmsServiceProvider '%s' not found!", smsCodeConfiguration.getSmsServiceProviderId());
-        }
-
-        String code = new SmsChallenge(context.getAuthenticationSession()).code(smsCodeConfiguration);
-        String smsText = smsTextService.getSmsText(code, smsCodeConfiguration.getSmsCodeTtl(), session.getContext().resolveLocale(context.getUser()));
-        smsServiceProvider.getSmsService().send(mobileNumber, smsText);
-    }
-
     @Override
     public void processAction(RequiredActionContext context) {
         this.context = context;
@@ -122,10 +105,11 @@ public class SmsRequiredAction implements RequiredActionProvider, CredentialRegi
             context.getAuthenticationSession().removeAuthNote(ENTERED_NUMBER_KEY);
             showEnterNumberScreen();
         }
-        else if (isResendSms()) {
+        else if (SmsChallengeHelper.isResendSms(context.getHttpRequest().getDecodedFormParameters())) {
             try {
                 final String enteredNumber = context.getAuthenticationSession().getAuthNote(ENTERED_NUMBER_KEY);
-                sendSmsChallenge(enteredNumber, context.getConfig().getConfig(), context.getSession());
+                final SmsCodeConfiguration smsCodeConfiguration = new SmsCodeConfiguration(context.getConfig().getConfig());
+                SmsChallengeHelper.sendSmsChallenge(enteredNumber, smsCodeConfiguration, context.getAuthenticationSession(), context.getSession(), context.getUser(), smsTextService);
                 showChallengeScreen(Optional.empty(), true);
             }
             catch (SmsRateLimitedException e) {
@@ -152,13 +136,9 @@ public class SmsRequiredAction implements RequiredActionProvider, CredentialRegi
         return queryParameters.containsKey(RESET_NUMBER_QUERY_KEY);
     }
 
-    private boolean isResendSms() {
-        return context.getHttpRequest().getDecodedFormParameters().getFirst(Constants.RESEND_SMS) != null;
-    }
-
     private void challenge() {
         String code = context.getHttpRequest().getDecodedFormParameters().getFirst(INPUT_ID_CODE);
-        Optional<String> error = validateCode(code);
+        Optional<String> error = SmsChallengeHelper.validateCode(code, context.getAuthenticationSession());
         if (error.isPresent()) {
             showChallengeScreenWithFieldError(error.get());
         }
@@ -182,7 +162,8 @@ public class SmsRequiredAction implements RequiredActionProvider, CredentialRegi
         }
         else {
             try {
-                sendSmsChallenge(phoneNumber, context.getConfig().getConfig(), context.getSession());
+                final SmsCodeConfiguration smsCodeConfiguration = new SmsCodeConfiguration(context.getConfig().getConfig());
+                SmsChallengeHelper.sendSmsChallenge(phoneNumber, smsCodeConfiguration, context.getAuthenticationSession(), context.getSession(), context.getUser(), smsTextService);
                 setState(State.CHALLENGE);
                 context.getAuthenticationSession().setAuthNote(ENTERED_NUMBER_KEY, phoneNumber);
                 showChallengeScreen();
@@ -287,16 +268,6 @@ public class SmsRequiredAction implements RequiredActionProvider, CredentialRegi
             return Optional.of("sms.phoneNumber.error.invalidFormat");
         }
 
-        return Optional.empty();
-    }
-
-    private Optional<String> validateCode(String code) {
-        if (code == null || code.isBlank()) {
-            return Optional.of("sms.code.error.empty");
-        }
-        if (!new SmsChallenge(context.getAuthenticationSession()).isValid(code)) {
-            return Optional.of("sms.code.error.wrong");
-        }
         return Optional.empty();
     }
 
