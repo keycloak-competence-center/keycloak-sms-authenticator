@@ -9,7 +9,7 @@ To install the SMS Authenticator add the jar to the Keycloak server:
 cp target/keycloak-sms-authenticator-<VERSION>.jar <KEYCLOAK_HOME>/providers/
 ```
 
-Upon successful installation the authenticator "SMS Authentication" (`sms-authenticator`) and the required action "Configure SMS" (`sms-config`) are available.
+Upon successful installation the authenticator "SMS Authentication" (`sms-authenticator`) and the required actions "Configure SMS" (`sms-config`) and "Verify SMS" (`sms-verify`) are available.
 
 Configuration
 ---
@@ -23,8 +23,8 @@ Configuration
 | `sms-code-length` | Number of characters in the generated code | `6` |
 | `sms-code-characters` | Allowed characters for code generation. Must be at least 2 characters long to take effect; otherwise falls back to alphanumeric. Set to e.g. `0123456789` for digits only, or `11` to always generate codes consisting of `1`s (useful for testing). | _(empty = alphanumeric)_ |
 | `sms-show-phone-number` | Whether to display the phone number on the code entry screen | `false` |
-| `sms-phone-number-validation-regex` | Regex to validate phone numbers (empty = accept all). The regex is matched against the cleaned number (see below). Example for Swiss mobile: `^\+417[5-9]\d{7}$` | _(empty)_ |
-| `sms-phone-number-validation-hint` | Human-readable hint used as the phone number input placeholder (e.g. `+41 7x xxx xx xx`) | _(empty)_ |
+| `sms-phone-number-validation-regex` | _(sms-config only)_ Regex to validate phone numbers (empty = accept all). The regex is matched against the cleaned number (see below). Example for Swiss mobile: `^\+417[5-9]\d{7}$` | _(empty)_ |
+| `sms-phone-number-validation-hint` | _(sms-config only)_ Human-readable hint used as the phone number input placeholder (e.g. `+41 7x xxx xx xx`) | _(empty)_ |
 
 ### Phone Number Cleaning
 
@@ -113,16 +113,22 @@ Invalid SMS code attempts during the login flow (authenticator) trigger Keycloak
                 "sms-service-provider-id": "uniport-sms-service",
                 "sms-code-ttl": "60",
                 "sms-code-length": "4",
-                "sms-show-phone-number": false,
-                "sms-phone-number-validation-regex": "^\\+417[5-9]\\d{7}$",
-                "sms-phone-number-validation-hint": "+41 7x xxx xx xx"
+                "sms-show-phone-number": false
             }
         }
     ]
 }
 ```
 
-### Example: Required Action
+### Required Actions
+
+Two required actions are available:
+
+- **Configure SMS** (`sms-config`) — prompts the user to enter a phone number and verify it via SMS code. Creates an SMS credential on success. Use this when users set up their own phone number (e.g. during registration or via account management). Implements `CredentialRegistrator`, so Keycloak's login flow can trigger it automatically when no SMS credential exists.
+
+- **Verify SMS** (`sms-verify`) — sends an SMS code to the user's existing phone number and shows only the code entry screen (no phone number entry). Does not create or modify credentials. Use this for onboarding flows where an admin pre-provisions the phone number via the Keycloak admin API, and the user only needs to prove they control it.
+
+### Example: Required Actions
 
 ```json
 {
@@ -141,6 +147,20 @@ Invalid SMS code attempts during the login flow (authenticator) trigger Keycloak
                 "sms-show-phone-number": false,
                 "sms-phone-number-validation-regex": "^\\+417[5-9]\\d{7}$",
                 "sms-phone-number-validation-hint": "+41 7x xxx xx xx"
+            }
+        },
+        {
+            "alias": "sms-verify",
+            "name": "Verify SMS",
+            "providerId": "sms-verify",
+            "enabled": true,
+            "defaultAction": false,
+            "priority": 25,
+            "config": {
+                "sms-service-provider-id": "sms-to-console",
+                "sms-code-ttl": "60",
+                "sms-code-length": "5",
+                "sms-show-phone-number": true
             }
         }
     ]

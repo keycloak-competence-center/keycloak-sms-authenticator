@@ -1,1 +1,2 @@
 com.inventage.keycloak.sms.authentication.requireactions.SmsRequiredActionFactory
+com.inventage.keycloak.sms.authentication.requireactions.SmsVerifyActionFactory

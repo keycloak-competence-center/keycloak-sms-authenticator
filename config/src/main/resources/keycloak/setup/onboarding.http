@@ -1,0 +1,118 @@
+### Keycloak SMS Authenticator — User Onboarding
+### Simulates the onboarding process: create user with phone number credential,
+### set required actions (update password + SMS verify), and send execute-actions email.
+###
+### Prerequisites:
+### - Keycloak running at localhost:8080 with myrealm configured
+### - Mailpit running at localhost:1025 (SMTP) / localhost:8025 (Web UI)
+### - SMTP configured in myrealm (via realm-myrealm.json smtpServer section)
+
+### Variables
+@keycloak = http://localhost:8080
+@realm = myrealm
+@adminRealm = master
+@clientId = temp-client-admin
+@clientSecret = admin
+
+### ---------------------------------------------------------
+### Step 1: Obtain admin access token (client credentials)
+### ---------------------------------------------------------
+# @name getToken
+POST {{keycloak}}/realms/{{adminRealm}}/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials&client_id={{clientId}}&client_secret={{clientSecret}}
+
+> {%
+    client.global.set("access_token", response.body.access_token);
+%}
+
+### ---------------------------------------------------------
+### Step 2: Create user
+### ---------------------------------------------------------
+# @name createUser
+POST {{keycloak}}/admin/realms/{{realm}}/users
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "username": "onboard-user1",
+  "firstName": "Jane",
+  "lastName": "Doe",
+  "email": "jane.doe@example.com",
+  "emailVerified": true,
+  "enabled": true,
+  "requiredActions": ["sms-verify", "UPDATE_PASSWORD"]
+}
+
+> {%
+    // Extract user ID from Location header
+    const location = response.headers.valueOf("Location");
+    const userId = location.substring(location.lastIndexOf("/") + 1);
+    client.global.set("userId", userId);
+%}
+
+### ---------------------------------------------------------
+### Step 3: Look up user ID (alternative to extracting from Location header)
+### ---------------------------------------------------------
+# @name getUser
+GET {{keycloak}}/admin/realms/{{realm}}/users?username=onboard-user1&exact=true
+Authorization: Bearer {{access_token}}
+
+> {%
+    client.global.set("userId", response.body[0].id);
+%}
+
+### ---------------------------------------------------------
+### Step 4: Add SMS credential (phone number) via user update
+###
+### The credentials array on the user representation creates new
+### credentials. The phone number is stored in credentialData JSON.
+### ---------------------------------------------------------
+# @name addSmsCredential
+PUT {{keycloak}}/admin/realms/{{realm}}/users/{{userId}}
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "credentials": [
+    {
+      "type": "sms",
+      "userLabel": "+41791234567",
+      "credentialData": "{\"phoneNumber\":\"+41791234567\"}",
+      "secretData": "{}"
+    }
+  ]
+}
+
+### ---------------------------------------------------------
+### Step 5: Send execute-actions email
+###
+### This sends an email with a link that triggers the required actions.
+### The user clicks the link, sets a password, then verifies their phone
+### number via SMS code.
+###
+### Query parameters:
+###   client_id  - the client to redirect to after completion
+###   lifespan   - link validity in seconds (86400 = 24 hours)
+### ---------------------------------------------------------
+# @name sendActionsEmail
+PUT {{keycloak}}/admin/realms/{{realm}}/users/{{userId}}/execute-actions-email?client_id=myclient&lifespan=86400
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+["sms-verify", "UPDATE_PASSWORD"]
+
+### ---------------------------------------------------------
+### Utility: Get user credentials (verify SMS credential was created)
+### ---------------------------------------------------------
+# @name getUserCredentials
+GET {{keycloak}}/admin/realms/{{realm}}/users/{{userId}}/credentials
+Authorization: Bearer {{access_token}}
+
+### ---------------------------------------------------------
+### Utility: Delete user (cleanup)
+### ---------------------------------------------------------
+# @name deleteUser
+DELETE {{keycloak}}/admin/realms/{{realm}}/users/{{userId}}
+Authorization: Bearer {{access_token}}

@@ -59,7 +59,7 @@ public class SmsAuthenticatorFactory implements AuthenticatorFactory {
 
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
-        return SmsCodeConfiguration.getConfigProperties();
+        return SmsCodeConfiguration.getCodeConfigProperties();
     }
 
     @Override
