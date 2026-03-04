@@ -1,26 +1,21 @@
 package com.inventage.keycloak.sms.authentication.authenticators;
 
+import com.inventage.keycloak.sms.authentication.SmsChallengeHelper;
 import com.inventage.keycloak.sms.authentication.SmsCodeConfiguration;
 import com.inventage.keycloak.sms.authentication.requireactions.SmsRequiredAction;
 import com.inventage.keycloak.sms.gateway.SmsRateLimitedException;
-import com.inventage.keycloak.sms.gateway.SmsServiceProvider;
 import com.inventage.keycloak.sms.models.credential.SmsChallenge;
 import com.inventage.keycloak.sms.models.credential.SmsCredentialModel;
 import com.inventage.keycloak.sms.theme.SmsTextService;
+import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 import org.keycloak.authentication.AuthenticationFlowContext;
 import org.keycloak.authentication.AuthenticationFlowError;
 import org.keycloak.authentication.Authenticator;
-import org.keycloak.credential.CredentialModel;
 import org.keycloak.forms.login.LoginFormsProvider;
 import org.keycloak.models.*;
 import org.keycloak.models.utils.FormMessage;
-import org.keycloak.sessions.AuthenticationSessionModel;
-
-import java.io.IOException;
-
-import com.inventage.keycloak.sms.Constants;
 
 import static com.inventage.keycloak.sms.Constants.INPUT_ID_CODE;
 import static com.inventage.keycloak.sms.Constants.SMS_CHALLENGE_TEMPLATE_NAME;
@@ -49,14 +44,15 @@ public class SmsAuthenticator implements Authenticator {
     @Override
     public void authenticate(AuthenticationFlowContext context) {
         try {
-            final String mobileNumber = getMobileNumber(context.getUser());
+            final String mobileNumber = SmsChallengeHelper.getMobileNumber(context.getUser())
+                    .orElseThrow(() -> new IllegalStateException("no mobile number configured for user"));
             final SmsCodeConfiguration smsCodeConfiguration = new SmsCodeConfiguration(context.getAuthenticatorConfig().getConfig());
 
             final String smsSent = context.getAuthenticationSession().getAuthNote(SMS_SENT_NOTE);
             String smsError = null;
             if (smsSent == null) {
                 try {
-                    sendSmsChallenge(context.getUser(), mobileNumber, smsCodeConfiguration, context.getAuthenticationSession(), context.getSession());
+                    SmsChallengeHelper.sendSmsChallenge(mobileNumber, smsCodeConfiguration, context.getAuthenticationSession(), context.getSession(), context.getUser(), smsTextService);
                 }
                 catch (SmsRateLimitedException e) {
                     LOGGER.warn("authenticate: SMS sending was rate limited", e);
@@ -81,27 +77,15 @@ public class SmsAuthenticator implements Authenticator {
         }
     }
 
-    private void sendSmsChallenge(UserModel user, String mobileNumber, SmsCodeConfiguration smsCodeConfiguration, AuthenticationSessionModel authenticationSession, KeycloakSession session) throws IOException {
-        final SmsServiceProvider smsServiceProvider = session.getProvider(SmsServiceProvider.class, smsCodeConfiguration.getSmsServiceProviderId());
-        if (smsServiceProvider == null) {
-            final IllegalStateException exception = new IllegalStateException("Sms Service Provider is null");
-            LOGGER.warnf(exception, "sendSmsChallenge: SMS couldn't be sent, because SmsServiceProvider '%s' not found!", smsCodeConfiguration.getSmsServiceProviderId());
-            throw exception;
-        }
-
-        String code = new SmsChallenge(authenticationSession).code(smsCodeConfiguration);
-        String smsText = smsTextService.getSmsText(code, smsCodeConfiguration.getSmsCodeTtl(), session.getContext().resolveLocale(user));
-        smsServiceProvider.getSmsService().send(mobileNumber, smsText);
-    }
-
     @Override
     public void action(AuthenticationFlowContext context) {
-        final String resend = context.getHttpRequest().getDecodedFormParameters().getFirst(Constants.RESEND_SMS);
-        if (resend != null) {
-            final String mobileNumber = getMobileNumber(context.getUser());
+        final MultivaluedMap<String, String> formParams = context.getHttpRequest().getDecodedFormParameters();
+        if (SmsChallengeHelper.isResendSms(formParams)) {
+            final String mobileNumber = SmsChallengeHelper.getMobileNumber(context.getUser())
+                    .orElseThrow(() -> new IllegalStateException("no mobile number configured for user"));
             final SmsCodeConfiguration smsCodeConfiguration = new SmsCodeConfiguration(context.getAuthenticatorConfig().getConfig());
             try {
-                sendSmsChallenge(context.getUser(), mobileNumber, smsCodeConfiguration, context.getAuthenticationSession(), context.getSession());
+                SmsChallengeHelper.sendSmsChallenge(mobileNumber, smsCodeConfiguration, context.getAuthenticationSession(), context.getSession(), context.getUser(), smsTextService);
                 context.challenge(context.form()
                         .setAttribute(REALM_ATTRIBUTE, context.getRealm())
                         .setAttribute(SHOW_PHONE_NUMBER_ATTRIBUTE, smsCodeConfiguration.getShowPhoneNumber(context.getAuthenticatorConfig()))
@@ -145,7 +129,8 @@ public class SmsAuthenticator implements Authenticator {
         } else {
             // invalid
             AuthenticationExecutionModel execution = context.getExecution();
-            final String mobileNumber = getMobileNumber(context.getUser());
+            final String mobileNumber = SmsChallengeHelper.getMobileNumber(context.getUser())
+                    .orElseThrow(() -> new IllegalStateException("no mobile number configured for user"));
             final SmsCodeConfiguration smsCodeConfiguration = new SmsCodeConfiguration(context.getAuthenticatorConfig().getConfig());
             if (execution.isRequired()) {
                 context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS,
@@ -159,16 +144,6 @@ public class SmsAuthenticator implements Authenticator {
                 context.attempted();
             }
         }
-    }
-
-    private String getMobileNumber(UserModel user) {
-        CredentialModel credentialModel = user.credentialManager()
-                .getStoredCredentialsByTypeStream(SmsCredentialModel.TYPE)
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("no mobile number configured for user"));
-
-        SmsCredentialModel smsCredentialModel = SmsCredentialModel.createFromCredentialModel(credentialModel);
-        return smsCredentialModel.getSmsCredentialData().getPhoneNumber();
     }
 
     @Override
