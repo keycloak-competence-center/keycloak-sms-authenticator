@@ -10,6 +10,15 @@
   "eventsExpiration": 259200,
   "loginTheme": "inventage",
   "accountTheme": "inventage.v2",
+  "smtpServer": {
+    "host": "$(env:SMTP_HOST:-localhost)",
+    "port": "$(env:SMTP_PORT:-1025)",
+    "from": "keycloak@localhost",
+    "fromDisplayName": "Keycloak",
+    "auth": "",
+    "ssl": "",
+    "starttls": ""
+  },
   "clients": [
     {
       "clientId": "myclient",
@@ -142,9 +151,7 @@
         "sms-code-ttl": "60",
         "sms-code-length": "4",
         "sms-code-characters": "$(env:SMS_CODE_CHARACTERS:-)",
-        "sms-show-phone-number": true,
-        "sms-phone-number-validation-regex": "^\\+417[5-9]\\d{7}$",
-        "sms-phone-number-validation-hint": "+41 7x xxx xx xx"
+        "sms-show-phone-number": true
       }
     }
   ],
@@ -154,7 +161,7 @@
       "name": "Configure SMS",
       "providerId": "sms-config",
       "enabled": true,
-      "defaultAction": true,
+      "defaultAction": false,
       "priority": 1001,
       "config": {
         "sms-service-provider-id": "sms-to-console",
@@ -164,6 +171,21 @@
         "sms-show-phone-number": true,
         "sms-phone-number-validation-regex": "^\\+417[5-9]\\d{7}$",
         "sms-phone-number-validation-hint": "+41 7x xxx xx xx"
+      }
+    },
+    {
+      "alias": "sms-verify",
+      "name": "Verify SMS",
+      "providerId": "sms-verify",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 25,
+      "config": {
+        "sms-service-provider-id": "sms-to-console",
+        "sms-code-ttl": "60",
+        "sms-code-length": "5",
+        "sms-code-characters": "$(env:SMS_CODE_CHARACTERS:-)",
+        "sms-show-phone-number": true
       }
     }
   ],

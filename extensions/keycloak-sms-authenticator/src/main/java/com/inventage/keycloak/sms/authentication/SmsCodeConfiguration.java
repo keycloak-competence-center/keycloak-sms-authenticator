@@ -6,6 +6,7 @@ import org.jboss.logging.Logger;
 import org.keycloak.models.AuthenticatorConfigModel;
 import org.keycloak.provider.ProviderConfigProperty;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -33,7 +34,11 @@ public class SmsCodeConfiguration implements SmSChallengeConfiguration {
     private static final String SHOW_PHONE_NUMBER_CONFIG = "sms-show-phone-number";
     private static final boolean SHOW_PHONE_NUMBER_DEFAULT = false;
 
-    public static List<ProviderConfigProperty> getConfigProperties() {
+    /**
+     * Returns config properties for SMS code generation and display (without phone number validation).
+     * Used by providers that send/verify SMS codes but do not collect phone numbers (authenticator, sms-verify).
+     */
+    public static List<ProviderConfigProperty> getCodeConfigProperties() {
         final ProviderConfigProperty smsServiceProviderId = new ProviderConfigProperty();
         smsServiceProviderId.setType(ProviderConfigProperty.STRING_TYPE);
         smsServiceProviderId.setDefaultValue(SMS_SERVICE_PROVIDER_ID_DEFAULT);
@@ -68,6 +73,14 @@ public class SmsCodeConfiguration implements SmSChallengeConfiguration {
         showPhoneNumber.setLabel("Show Phone Number Switch");
         showPhoneNumber.setHelpText("Switch to control if the phone number on the SMS login screen should be shown.");
 
+        return List.of(smsServiceProviderId, smsCodeLength, smsCodeTtl, smsCodeCharacters, showPhoneNumber);
+    }
+
+    /**
+     * Returns all config properties including phone number validation.
+     * Used by providers that collect and validate phone numbers (sms-config).
+     */
+    public static List<ProviderConfigProperty> getConfigProperties() {
         final ProviderConfigProperty phoneNumberValidationRegex = new ProviderConfigProperty();
         phoneNumberValidationRegex.setType(ProviderConfigProperty.STRING_TYPE);
         phoneNumberValidationRegex.setDefaultValue(SMS_PHONE_NUMBER_VALIDATION_REGEX_DEFAULT);
@@ -82,7 +95,11 @@ public class SmsCodeConfiguration implements SmSChallengeConfiguration {
         phoneNumberValidationHint.setLabel("Phone Number Validation Hint");
         phoneNumberValidationHint.setHelpText("Human-readable hint for the expected phone number format, e.g. '+41 7x xxx xx xx'.");
 
-        return List.of(smsServiceProviderId, smsCodeLength, smsCodeTtl, smsCodeCharacters, showPhoneNumber, phoneNumberValidationRegex, phoneNumberValidationHint);
+        final List<ProviderConfigProperty> codeProperties = getCodeConfigProperties();
+        final ArrayList<ProviderConfigProperty> all = new ArrayList<>(codeProperties);
+        all.add(phoneNumberValidationRegex);
+        all.add(phoneNumberValidationHint);
+        return List.copyOf(all);
     }
 
     private static final Logger LOGGER = Logger.getLogger(SmsCodeConfiguration.class);
