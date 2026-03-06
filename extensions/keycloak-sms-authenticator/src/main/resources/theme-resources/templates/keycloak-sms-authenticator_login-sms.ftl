@@ -30,7 +30,7 @@
                 <div id="kc-form-options" class="${properties.kcFormOptionsClass!}">
                     <div class="${properties.kcFormOptionsWrapperClass!}">
                         <#if resetPhoneNumberUri??>
-                            <span><a href="${resetPhoneNumberUri}">${kcSanitize(msg("sms.phoneNumber.reset"))?no_esc}</a></span>
+                            <span><a href="${resetPhoneNumberUri}">${kcSanitize(msg("smsPhoneNumberReset"))?no_esc}</a></span>
                         </#if>
                         <span><a href="${url.loginUrl}">${kcSanitize(msg("backToLogin"))?no_esc}</a></span>
                     </div>

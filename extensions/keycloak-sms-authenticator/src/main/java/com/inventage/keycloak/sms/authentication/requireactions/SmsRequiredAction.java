@@ -3,6 +3,7 @@ package com.inventage.keycloak.sms.authentication.requireactions;
 import com.inventage.keycloak.sms.authentication.PhoneNumberUtils;
 import com.inventage.keycloak.sms.authentication.SmsChallengeHelper;
 import com.inventage.keycloak.sms.authentication.SmsCodeConfiguration;
+import com.inventage.keycloak.sms.authentication.SmsCodeValidationResult;
 import com.inventage.keycloak.sms.credential.SmsCredentialProvider;
 import com.inventage.keycloak.sms.credential.SmsCredentialProviderFactory;
 import com.inventage.keycloak.sms.gateway.SmsRateLimitedException;
@@ -18,17 +19,22 @@ import org.keycloak.authentication.RequiredActionContext;
 import org.keycloak.authentication.RequiredActionProvider;
 import org.keycloak.credential.CredentialProvider;
 import org.keycloak.forms.login.LoginFormsProvider;
-import org.keycloak.models.utils.FormMessage;
 import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.utils.FormMessage;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
 import java.net.URI;
 import java.util.Optional;
 
-import static com.inventage.keycloak.sms.Constants.*;
+import static com.inventage.keycloak.sms.Constants.ENTER_NUMBER_TEMPLATE_NAME;
+import static com.inventage.keycloak.sms.Constants.INPUT_ID_CODE;
+import static com.inventage.keycloak.sms.Constants.SMS_CHALLENGE_TEMPLATE_NAME;
+import static com.inventage.keycloak.sms.authentication.SmsCodeValidationResult.VALID;
 
 
-
+/**
+ * Required action for registering and verifying a phone number for SMS authentication.
+ */
 public class SmsRequiredAction implements RequiredActionProvider, CredentialRegistrator {
 
     private static final Logger LOGGER = Logger.getLogger(SmsRequiredAction.class);
@@ -66,6 +72,19 @@ public class SmsRequiredAction implements RequiredActionProvider, CredentialRegi
     public void requiredActionChallenge(RequiredActionContext context) {
         this.context = context;
 
+        final String bruteForceError = SmsChallengeHelper.getDisabledByBruteForceEventError(context);
+        if (bruteForceError != null) {
+            context.getEvent().user(context.getUser()).error(bruteForceError);
+            final State state = getStateOrDefault();
+            if (State.CHALLENGE.equals(state)) {
+                showChallengeScreenWithFieldError(SmsChallengeHelper.disabledByBruteForceError(bruteForceError));
+            }
+            else {
+                showEnterNumberScreenWithGlobalError(SmsChallengeHelper.disabledByBruteForceError(bruteForceError), null);
+            }
+            return;
+        }
+
         final String enteredNumber = context.getAuthenticationSession().getAuthNote(ENTERED_NUMBER_KEY);
 
         if (enteredNumber == null) {
@@ -91,7 +110,7 @@ public class SmsRequiredAction implements RequiredActionProvider, CredentialRegi
                 }
                 catch (Exception e) {
                     LOGGER.error("error while sending sms", e);
-                    showEnterNumberScreenWithGlobalError("sms.phoneNumber.error.sending", enteredNumber);
+                    showEnterNumberScreenWithGlobalError("smsPhoneNumberErrorSending", enteredNumber);
                 }
             }
         }
@@ -138,9 +157,9 @@ public class SmsRequiredAction implements RequiredActionProvider, CredentialRegi
 
     private void challenge() {
         String code = context.getHttpRequest().getDecodedFormParameters().getFirst(INPUT_ID_CODE);
-        Optional<String> error = SmsChallengeHelper.validateCode(code, context.getAuthenticationSession());
-        if (error.isPresent()) {
-            showChallengeScreenWithFieldError(error.get());
+        final SmsCodeValidationResult result = SmsChallengeHelper.validateCode(code, context.getAuthenticationSession());
+        if (result != VALID) {
+            showChallengeScreenWithFieldError(result.messageKey());
         }
         else {
             SmsCredentialProvider credentialProvider =
@@ -176,7 +195,7 @@ public class SmsRequiredAction implements RequiredActionProvider, CredentialRegi
             }
             catch (Exception e) {
                 LOGGER.error("error while sending sms", e);
-                showEnterNumberScreenWithGlobalError("sms.phoneNumber.error.sending", phoneNumber);
+                showEnterNumberScreenWithGlobalError("smsPhoneNumberErrorSending", phoneNumber);
             }
         }
     }
@@ -259,13 +278,13 @@ public class SmsRequiredAction implements RequiredActionProvider, CredentialRegi
 
     private Optional<String> validatePhoneNumber(String phoneNumber) {
         if (phoneNumber == null || phoneNumber.isBlank()) {
-            return Optional.of("sms.phoneNumber.error.empty");
+            return Optional.of("smsPhoneNumberErrorEmpty");
         }
 
         final SmsCodeConfiguration smsCodeConfiguration = new SmsCodeConfiguration(context.getConfig().getConfig());
         final String regex = smsCodeConfiguration.getPhoneNumberValidationRegex();
         if (regex != null && !regex.isEmpty() && !phoneNumber.matches(regex)) {
-            return Optional.of("sms.phoneNumber.error.invalidFormat");
+            return Optional.of("smsPhoneNumberErrorInvalidFormat");
         }
 
         return Optional.empty();

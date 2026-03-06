@@ -2,22 +2,28 @@ package com.inventage.keycloak.sms.authentication.requireactions;
 
 import com.inventage.keycloak.sms.authentication.SmsChallengeHelper;
 import com.inventage.keycloak.sms.authentication.SmsCodeConfiguration;
+import com.inventage.keycloak.sms.authentication.SmsCodeValidationResult;
 import com.inventage.keycloak.sms.gateway.SmsRateLimitedException;
 import com.inventage.keycloak.sms.theme.SmsTextService;
 import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 import org.keycloak.authentication.RequiredActionContext;
 import org.keycloak.authentication.RequiredActionProvider;
+import org.keycloak.events.Errors;
 import org.keycloak.forms.login.LoginFormsProvider;
 import org.keycloak.models.utils.FormMessage;
 
-import java.util.Optional;
-
-import static com.inventage.keycloak.sms.Constants.*;
+import static com.inventage.keycloak.sms.Constants.INPUT_ID_CODE;
+import static com.inventage.keycloak.sms.Constants.SMS_CHALLENGE_TEMPLATE_NAME;
+import static com.inventage.keycloak.sms.authentication.SmsCodeValidationResult.EXPIRED;
+import static com.inventage.keycloak.sms.authentication.SmsCodeValidationResult.VALID;
 
 /**
  * Required action that verifies an existing SMS credential without showing the phone number entry screen.
  * Designed for onboarding flows where the phone number is pre-provisioned by an admin.
+ * <p>
+ * Brute force protection is handled manually since the required action framework does not
+ * count failures automatically (unlike the authenticator framework's {@code failureChallenge}).
  */
 public class SmsVerifyAction implements RequiredActionProvider {
 
@@ -41,6 +47,13 @@ public class SmsVerifyAction implements RequiredActionProvider {
 
     @Override
     public void requiredActionChallenge(RequiredActionContext context) {
+        final String bruteForceError = SmsChallengeHelper.getDisabledByBruteForceEventError(context);
+        if (bruteForceError != null) {
+            context.getEvent().user(context.getUser()).error(bruteForceError);
+            buildChallengeForm(context, SmsChallengeHelper.disabledByBruteForceError(bruteForceError), null, false);
+            return;
+        }
+
         final String mobileNumber = SmsChallengeHelper.getMobileNumber(context.getUser()).orElse(null);
         if (mobileNumber == null) {
             LOGGER.errorf("requiredActionChallenge: no SMS credential found for user '%s'", context.getUser().getUsername());
@@ -76,6 +89,13 @@ public class SmsVerifyAction implements RequiredActionProvider {
 
     @Override
     public void processAction(RequiredActionContext context) {
+        final String bruteForceError = SmsChallengeHelper.getDisabledByBruteForceEventError(context);
+        if (bruteForceError != null) {
+            context.getEvent().user(context.getUser()).error(bruteForceError);
+            buildChallengeForm(context, SmsChallengeHelper.disabledByBruteForceError(bruteForceError), null, false);
+            return;
+        }
+
         if (SmsChallengeHelper.isResendSms(context.getHttpRequest().getDecodedFormParameters())) {
             final String mobileNumber = SmsChallengeHelper.getMobileNumber(context.getUser()).orElse(null);
             try {
@@ -94,9 +114,13 @@ public class SmsVerifyAction implements RequiredActionProvider {
         }
         else {
             final String code = context.getHttpRequest().getDecodedFormParameters().getFirst(INPUT_ID_CODE);
-            final Optional<String> error = SmsChallengeHelper.validateCode(code, context.getAuthenticationSession());
-            if (error.isPresent()) {
-                buildChallengeForm(context, error.get(), null, false);
+            final SmsCodeValidationResult result = SmsChallengeHelper.validateCode(code, context.getAuthenticationSession());
+            if (result != VALID) {
+                if (result != EXPIRED) {
+                    context.getEvent().user(context.getUser()).error(Errors.INVALID_USER_CREDENTIALS);
+                    SmsChallengeHelper.registerFailedAttempt(context);
+                }
+                buildChallengeForm(context, result.messageKey(), null, false);
             }
             else {
                 context.success();
