@@ -2,9 +2,9 @@ package com.inventage.keycloak.sms.authentication.authenticators;
 
 import com.inventage.keycloak.sms.authentication.SmsChallengeHelper;
 import com.inventage.keycloak.sms.authentication.SmsCodeConfiguration;
+import com.inventage.keycloak.sms.authentication.SmsCodeValidationResult;
 import com.inventage.keycloak.sms.authentication.requireactions.SmsRequiredAction;
 import com.inventage.keycloak.sms.gateway.SmsRateLimitedException;
-import com.inventage.keycloak.sms.models.credential.SmsChallenge;
 import com.inventage.keycloak.sms.models.credential.SmsCredentialModel;
 import com.inventage.keycloak.sms.theme.SmsTextService;
 import jakarta.ws.rs.core.MultivaluedMap;
@@ -13,19 +13,27 @@ import org.jboss.logging.Logger;
 import org.keycloak.authentication.AuthenticationFlowContext;
 import org.keycloak.authentication.AuthenticationFlowError;
 import org.keycloak.authentication.Authenticator;
+import org.keycloak.authentication.authenticators.util.AuthenticatorUtils;
 import org.keycloak.forms.login.LoginFormsProvider;
-import org.keycloak.models.*;
+import org.keycloak.models.AuthenticationExecutionModel;
+import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.RealmModel;
+import org.keycloak.models.UserModel;
 import org.keycloak.models.utils.FormMessage;
 
 import static com.inventage.keycloak.sms.Constants.INPUT_ID_CODE;
 import static com.inventage.keycloak.sms.Constants.SMS_CHALLENGE_TEMPLATE_NAME;
+import static com.inventage.keycloak.sms.authentication.SmsCodeValidationResult.EXPIRED;
+import static com.inventage.keycloak.sms.authentication.SmsCodeValidationResult.VALID;
 
 /**
- * @author Geraldine von Roten
+ * SMS second-factor authenticator. Sends an SMS code and validates the user's input.
+ * <p>
+ * Brute force protection follows the same pattern as Keycloak's built-in OTP authenticator:
+ * lockout is checked in {@link #action}, and invalid credentials are reported via
+ * {@link AuthenticationFlowContext#failureChallenge} so the framework counts failures automatically.
  */
 public class SmsAuthenticator implements Authenticator {
-
-    public static final String SMS_AUTH_CODE_INVALID = "smsAuthCodeInvalid";
 
     private static final String MOBILE_NUMBER_ATTRIBUTE = "mobileNumber";
     private static final Logger LOGGER = Logger.getLogger(SmsAuthenticator.class);
@@ -79,6 +87,21 @@ public class SmsAuthenticator implements Authenticator {
 
     @Override
     public void action(AuthenticationFlowContext context) {
+        final String bruteForceError = AuthenticatorUtils.getDisabledByBruteForceEventError(context, context.getUser());
+        if (bruteForceError != null) {
+            context.getEvent().user(context.getUser());
+            context.getEvent().error(bruteForceError);
+            final String mobileNumber = SmsChallengeHelper.getMobileNumber(context.getUser()).orElse("");
+            final SmsCodeConfiguration smsCodeConfiguration = new SmsCodeConfiguration(context.getAuthenticatorConfig().getConfig());
+            context.forceChallenge(context.form()
+                    .setAttribute(REALM_ATTRIBUTE, context.getRealm())
+                    .setAttribute(SHOW_PHONE_NUMBER_ATTRIBUTE, smsCodeConfiguration.getShowPhoneNumber(context.getAuthenticatorConfig()))
+                    .setAttribute(MOBILE_NUMBER_ATTRIBUTE, mobileNumber)
+                    .addError(new FormMessage(INPUT_ID_CODE, SmsChallengeHelper.disabledByBruteForceError(bruteForceError)))
+                    .createForm(SMS_CHALLENGE_TEMPLATE_NAME));
+            return;
+        }
+
         final MultivaluedMap<String, String> formParams = context.getHttpRequest().getDecodedFormParameters();
         if (SmsChallengeHelper.isResendSms(formParams)) {
             final String mobileNumber = SmsChallengeHelper.getMobileNumber(context.getUser())
@@ -116,33 +139,39 @@ public class SmsAuthenticator implements Authenticator {
     }
 
     private void validate(String enteredCode, AuthenticationFlowContext context) {
-        final SmsChallenge smsChallenge = new SmsChallenge(context.getAuthenticationSession());
-        if (smsChallenge.isValid(enteredCode)) {
-            if (smsChallenge.isExpired()) {
-                // expired
-                context.failureChallenge(AuthenticationFlowError.EXPIRED_CODE,
-                        context.form().setError("smsAuthCodeExpired").createErrorPage(Response.Status.BAD_REQUEST));
-            } else {
-                // valid
-                context.success();
-            }
-        } else {
-            // invalid
-            AuthenticationExecutionModel execution = context.getExecution();
-            final String mobileNumber = SmsChallengeHelper.getMobileNumber(context.getUser())
-                    .orElseThrow(() -> new IllegalStateException("no mobile number configured for user"));
-            final SmsCodeConfiguration smsCodeConfiguration = new SmsCodeConfiguration(context.getAuthenticatorConfig().getConfig());
-            if (execution.isRequired()) {
-                context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS,
-                        context.form()
-                                .setAttribute(REALM_ATTRIBUTE, context.getRealm())
-                                .setAttribute(SHOW_PHONE_NUMBER_ATTRIBUTE, smsCodeConfiguration.getShowPhoneNumber(context.getAuthenticatorConfig()))
-                                .setAttribute(MOBILE_NUMBER_ATTRIBUTE, mobileNumber)
-                                .addError(new FormMessage(INPUT_ID_CODE, SMS_AUTH_CODE_INVALID))
-                                .createForm(SMS_CHALLENGE_TEMPLATE_NAME));
-            } else if (execution.isConditional() || execution.isAlternative()) {
-                context.attempted();
-            }
+        final SmsCodeValidationResult result = SmsChallengeHelper.validateCode(enteredCode, context.getAuthenticationSession());
+        if (result == VALID) {
+            context.success();
+            return;
+        }
+
+        final String mobileNumber = SmsChallengeHelper.getMobileNumber(context.getUser())
+                .orElseThrow(() -> new IllegalStateException("no mobile number configured for user"));
+        final SmsCodeConfiguration smsCodeConfiguration = new SmsCodeConfiguration(context.getAuthenticatorConfig().getConfig());
+
+        if (result == EXPIRED) {
+            // Code was correct but expired — show the form so the user can resend, don't count as brute force failure.
+            context.forceChallenge(context.form()
+                    .setAttribute(REALM_ATTRIBUTE, context.getRealm())
+                    .setAttribute(SHOW_PHONE_NUMBER_ATTRIBUTE, smsCodeConfiguration.getShowPhoneNumber(context.getAuthenticatorConfig()))
+                    .setAttribute(MOBILE_NUMBER_ATTRIBUTE, mobileNumber)
+                    .addError(new FormMessage(INPUT_ID_CODE, EXPIRED.messageKey()))
+                    .createForm(SMS_CHALLENGE_TEMPLATE_NAME));
+            return;
+        }
+
+        final AuthenticationExecutionModel execution = context.getExecution();
+        if (execution.isRequired()) {
+            context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS,
+                    context.form()
+                            .setAttribute(REALM_ATTRIBUTE, context.getRealm())
+                            .setAttribute(SHOW_PHONE_NUMBER_ATTRIBUTE, smsCodeConfiguration.getShowPhoneNumber(context.getAuthenticatorConfig()))
+                            .setAttribute(MOBILE_NUMBER_ATTRIBUTE, mobileNumber)
+                            .addError(new FormMessage(INPUT_ID_CODE, result.messageKey()))
+                            .createForm(SMS_CHALLENGE_TEMPLATE_NAME));
+        }
+        else if (execution.isConditional() || execution.isAlternative()) {
+            context.attempted();
         }
     }
 

@@ -73,12 +73,12 @@ public class PhoneNumberOnRegisterFormAction implements FormAction, FormActionFa
         final String phoneNumber = PhoneNumberUtils.clean(formData.getFirst(FIELD_PHONENUMBER));
 
         if (Validation.isBlank(phoneNumber)) {
-            errors.add(new FormMessage(FIELD_PHONENUMBER, "sms.phoneNumber.error.empty"));
+            errors.add(new FormMessage(FIELD_PHONENUMBER, "smsPhoneNumberErrorEmpty"));
         }
         else {
             final String regex = getPhoneNumberValidationRegex(context);
             if (regex != null && !regex.isEmpty() && !phoneNumber.matches(regex)) {
-                errors.add(new FormMessage(FIELD_PHONENUMBER, "sms.phoneNumber.error.invalidFormat"));
+                errors.add(new FormMessage(FIELD_PHONENUMBER, "smsPhoneNumberErrorInvalidFormat"));
             }
         }
 
