@@ -28,7 +28,7 @@ grant_type=client_credentials&client_id={{clientId}}&client_secret={{clientSecre
 %}
 
 ### ---------------------------------------------------------
-### Step 2: Create user
+### Step 2: Create user with SMS credential
 ### ---------------------------------------------------------
 # @name createUser
 POST {{keycloak}}/admin/realms/{{realm}}/users
@@ -42,39 +42,7 @@ Content-Type: application/json
   "email": "jane.doe@example.com",
   "emailVerified": true,
   "enabled": true,
-  "requiredActions": ["sms-verify", "UPDATE_PASSWORD"]
-}
-
-> {%
-    // Extract user ID from Location header
-    const location = response.headers.valueOf("Location");
-    const userId = location.substring(location.lastIndexOf("/") + 1);
-    client.global.set("userId", userId);
-%}
-
-### ---------------------------------------------------------
-### Step 3: Look up user ID (alternative to extracting from Location header)
-### ---------------------------------------------------------
-# @name getUser
-GET {{keycloak}}/admin/realms/{{realm}}/users?username=onboard-user1&exact=true
-Authorization: Bearer {{access_token}}
-
-> {%
-    client.global.set("userId", response.body[0].id);
-%}
-
-### ---------------------------------------------------------
-### Step 4: Add SMS credential (phone number) via user update
-###
-### The credentials array on the user representation creates new
-### credentials. The phone number is stored in credentialData JSON.
-### ---------------------------------------------------------
-# @name addSmsCredential
-PUT {{keycloak}}/admin/realms/{{realm}}/users/{{userId}}
-Authorization: Bearer {{access_token}}
-Content-Type: application/json
-
-{
+  "requiredActions": ["sms-verify", "UPDATE_PASSWORD"],
   "credentials": [
     {
       "type": "sms",
@@ -85,8 +53,26 @@ Content-Type: application/json
   ]
 }
 
+> {%
+    // Extract user ID from Location header
+    const location = response.headers.valueOf("Location");
+    const userId = location.substring(location.lastIndexOf("/") + 1);
+    client.global.set("userId", userId);
+%}
+
 ### ---------------------------------------------------------
-### Step 5: Send execute-actions email
+### Step 2b: Look up user ID (alternative to extracting from Location header)
+### ---------------------------------------------------------
+# @name getUser
+GET {{keycloak}}/admin/realms/{{realm}}/users?username=onboard-user1&exact=true
+Authorization: Bearer {{access_token}}
+
+> {%
+    client.global.set("userId", response.body[0].id);
+%}
+
+### ---------------------------------------------------------
+### Step 3: Send execute-actions email
 ###
 ### This sends an email with a link that triggers the required actions.
 ### The user clicks the link, sets a password, then verifies their phone
