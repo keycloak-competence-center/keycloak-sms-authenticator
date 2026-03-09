@@ -162,8 +162,14 @@ public class SmsRequiredAction implements RequiredActionProvider, CredentialRegi
             showChallengeScreenWithFieldError(result.messageKey());
         }
         else {
-            SmsCredentialProvider credentialProvider =
+            final SmsCredentialProvider credentialProvider =
                     (SmsCredentialProvider) context.getSession().getProvider(CredentialProvider.class, SmsCredentialProviderFactory.PROVIDER_ID);
+
+            // Delete existing SMS credentials before creating the new one, so that
+            // changing the phone number replaces the old credential instead of adding a second one.
+            context.getUser().credentialManager().getStoredCredentialsByTypeStream(SmsCredentialModel.TYPE)
+                    .forEach(cred -> credentialProvider.deleteCredential(context.getRealm(), context.getUser(), cred.getId()));
+
             String enteredNumber = context.getAuthenticationSession().getAuthNote(ENTERED_NUMBER_KEY);
             SmsCredentialModel credentialModel = SmsCredentialModel.create(enteredNumber);
             credentialProvider.createCredential(context.getRealm(), context.getUser(), credentialModel);
