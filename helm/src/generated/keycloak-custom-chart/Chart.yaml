@@ -1,5 +1,5 @@
 name: keycloak-custom-chart
-version: 1.7.0-SNAPSHOT
+version: 1.8.0-SNAPSHOT
 apiVersion: v2
 
 dependencies:
