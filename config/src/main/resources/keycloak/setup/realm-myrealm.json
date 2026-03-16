@@ -144,7 +144,6 @@
           "authenticatorFlow": false,
           "requirement": "ALTERNATIVE",
           "priority": 10,
-          "autheticatorFlow": false,
           "userSetupAllowed": false
         },
         {
@@ -152,7 +151,6 @@
           "authenticatorFlow": false,
           "requirement": "DISABLED",
           "priority": 20,
-          "autheticatorFlow": false,
           "userSetupAllowed": false
         },
         {
@@ -160,14 +158,12 @@
           "authenticatorFlow": false,
           "requirement": "ALTERNATIVE",
           "priority": 25,
-          "autheticatorFlow": false,
           "userSetupAllowed": false
         },
         {
           "authenticatorFlow": true,
           "requirement": "ALTERNATIVE",
           "priority": 30,
-          "autheticatorFlow": true,
           "flowAlias": "browser-sms forms",
           "userSetupAllowed": false
         }
@@ -185,7 +181,6 @@
           "authenticatorFlow": false,
           "requirement": "REQUIRED",
           "priority": 10,
-          "autheticatorFlow": false,
           "userSetupAllowed": false
         },
         {
@@ -194,7 +189,6 @@
           "authenticatorFlow": false,
           "requirement": "REQUIRED",
           "priority": 20,
-          "autheticatorFlow": false,
           "userSetupAllowed": false
         }
       ]

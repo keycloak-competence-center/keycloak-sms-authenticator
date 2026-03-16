@@ -80,7 +80,7 @@ public class SmsAuthenticator implements Authenticator {
         catch (Exception e) {
             context.failureChallenge(
                     AuthenticationFlowError.INTERNAL_ERROR,
-                    context.form().setError("smsAuthSmsNotSent", e.getMessage())
+                    context.form().setError("smsAuthSmsNotSent")
                             .createErrorPage(Response.Status.INTERNAL_SERVER_ERROR));
         }
     }
@@ -128,7 +128,7 @@ public class SmsAuthenticator implements Authenticator {
             catch (Exception e) {
                 context.failureChallenge(
                         AuthenticationFlowError.INTERNAL_ERROR,
-                        context.form().setError("smsAuthSmsNotSent", e.getMessage())
+                        context.form().setError("smsAuthSmsNotSent")
                                 .createErrorPage(Response.Status.INTERNAL_SERVER_ERROR));
             }
             return;

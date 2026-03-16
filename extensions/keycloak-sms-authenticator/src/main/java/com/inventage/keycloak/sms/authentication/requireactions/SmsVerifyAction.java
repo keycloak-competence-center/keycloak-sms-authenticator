@@ -77,7 +77,7 @@ public class SmsVerifyAction implements RequiredActionProvider {
             catch (Exception e) {
                 LOGGER.error("error while sending sms", e);
                 context.challenge(context.form()
-                        .setError("smsAuthSmsNotSent", e.getMessage())
+                        .setError("smsAuthSmsNotSent")
                         .createErrorPage(Response.Status.INTERNAL_SERVER_ERROR));
                 return;
             }
