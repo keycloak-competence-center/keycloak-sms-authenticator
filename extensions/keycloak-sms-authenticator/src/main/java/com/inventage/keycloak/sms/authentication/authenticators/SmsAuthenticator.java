@@ -78,6 +78,7 @@ public class SmsAuthenticator implements Authenticator {
             context.challenge(form.createForm(SMS_CHALLENGE_TEMPLATE_NAME));
         }
         catch (Exception e) {
+            LOGGER.error("error while sending sms", e);
             context.failureChallenge(
                     AuthenticationFlowError.INTERNAL_ERROR,
                     context.form().setError("smsAuthSmsNotSent")
@@ -126,6 +127,7 @@ public class SmsAuthenticator implements Authenticator {
                         .createForm(SMS_CHALLENGE_TEMPLATE_NAME));
             }
             catch (Exception e) {
+                LOGGER.error("error while sending sms", e);
                 context.failureChallenge(
                         AuthenticationFlowError.INTERNAL_ERROR,
                         context.form().setError("smsAuthSmsNotSent")
