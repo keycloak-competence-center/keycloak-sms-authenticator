@@ -6,7 +6,7 @@
 
     <groupId>com.inventage.keycloak.sms-authenticator</groupId>
     <artifactId>parent</artifactId>
-    <version>1.8.1-SNAPSHOT</version>
+    <version>1.8.2-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>SMS Authenticator extension for Keycloak</name>
