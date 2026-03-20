@@ -30,6 +30,11 @@ public class SmsRequiredActionFactory implements RequiredActionFactory {
     }
 
     @Override
+    public boolean isOneTimeAction() {
+        return true;
+    }
+
+    @Override
     public List<ProviderConfigProperty> getConfigMetadata() {
         return SmsCodeConfiguration.getConfigProperties();
     }
